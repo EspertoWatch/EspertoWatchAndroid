@@ -1,5 +1,6 @@
 package espertolabs.esperto_ble_watch;
 
+import java.util.Observable;
 import java.util.Set;
 
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBAttribute;
@@ -11,7 +12,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.google.common.collect.Table;
 
 @DynamoDBTable(tableName="espertowatch-mobilehub-1699109079-HeartRate")
-public class HeartRate {
+public class HeartRate extends Observable{
 
     private String username;
     private int currentHR;
@@ -33,6 +34,8 @@ public class HeartRate {
 
     public void setCurrentHR(int currentHR) {
         this.currentHR = currentHR;
+        setChanged();
+        notifyObservers();
     }
 
     @DynamoDBAttribute(attributeName = "dailyHR")
@@ -42,6 +45,8 @@ public class HeartRate {
 
     public void setDailyHR(Set<Integer> dailyHR) {
         this.dailyHR = dailyHR;
+        setChanged();
+        notifyObservers();
     }
 
 }

@@ -51,6 +51,7 @@ import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
 import com.github.mikephil.charting.utils.ColorTemplate;
 import com.github.mikephil.charting.utils.Utils;
+import com.google.android.gms.common.data.DataBufferObserver;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -60,17 +61,20 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.Set;
 
 //TODO:: pass in internet information to adjust views
 //TODO:: connect to BLE device here
-public class SummaryActivity extends AppCompatActivity {
+public class SummaryActivity extends AppCompatActivity implements Observer {
 
 
     private TextView mTextMessage;
     private UserAccount user = new UserAccount();
-   // private HeartRate HRData; //class instance of heart rate table
-   // private StepCount stepData; //class instance of step count table
-   // private GoalManager goalManager;
+    private HeartRate userHR = new HeartRate();
+    private StepCount userSteps = new StepCount();
+
     private BLEService mBLEService;
     private boolean mServiceBound;
     private boolean mConnected = false;
@@ -169,6 +173,10 @@ public class SummaryActivity extends AppCompatActivity {
                 .awsConfiguration(AWSMobileClient.getInstance().getConfiguration())
                 .build();
 
+        //retrieve heart rate data
+        getHRDB();
+        getStepDB();
+
     }
 
     public void greetUser(){
@@ -179,11 +187,22 @@ public class SummaryActivity extends AppCompatActivity {
     //TODO:: add a loading screen to keep user occupied before data display
     private void displaySummary(){
         flipper.setDisplayedChild(3);
+        TextView hr = (TextView) findViewById(R.id.heartRateNum);
+        TextView step = (TextView) findViewById(R.id.stepCount);
+        //using default goals for now
+        if(userHR.getUsername() == null || userSteps.getUsername() == null){
+            Log.i("Fail", "user has no long term data");
+            hr.setText("0");
+            step.setText("0");
+            return; //just displaying random stand in data if not long term user
+        }
+        hr.setText(Integer.toString(userHR.getCurrentHR()));
+        step.setText(Integer.toString(userSteps.getCurrentSteps()));
     }
 
     private void displayHeart(){
         flipper.setDisplayedChild(1);
-        if(user.getUsername().equals("mmacmahon")){
+        if(userHR.getUsername() != null){
 
             List<Entry> entries = retrieveHeartRateData();
             LineDataSet dataSet = new LineDataSet(entries, "Heart Rate"); // add entries to dataset
@@ -222,15 +241,12 @@ public class SummaryActivity extends AppCompatActivity {
 
     //Retrieve data from AWS services
     //If no data - state "no data available"
-    //TODO:: store in a local data class so I don't have to keep requesting the data
     private List<Entry> retrieveHeartRateData(){
        //Retrieve data here
-        boolean newUser = checkNewUser(); //implement when hardware is provided
-       // getHRDB();
-
         List<Entry> entries = new ArrayList<Entry>();
+        Set<Integer> dailyHR = userHR.getDailyHR();
         int timeCounter = 8; //start at 8am TODO:: add actual times once I have the esperto watch (24 h clock)
-        for(int i = 60; i <75; i++){
+        for(Integer i: dailyHR){
             // turn your data into Entry objects
             entries.add(new Entry(timeCounter, i)); //wrap each data point into Entry objects
             timeCounter++;
@@ -270,13 +286,12 @@ public class SummaryActivity extends AppCompatActivity {
     //TODO:: store in a local data class so I don't have to keep requesting the data
     private BarDataSet retrieveStepData(){
         //retrieve step data and format output
-        boolean newUser = checkNewUser();
         ArrayList xVals = new ArrayList();
         ArrayList<BarEntry> yVals = new ArrayList<BarEntry>();
         float counter = 0;
         float timeCounter = 8; //start at 8am TODO:: add actual times once I have the esperto watch (24 h clock)
-
-        for(float i = 5000; i < 10000; i = i+100){
+        Set<Integer> dailySteps = userSteps.getDailySteps();
+        for(Integer i:dailySteps){
             // turn your data into Entry objects
             int hours = (int)timeCounter;
             int min = (int)(timeCounter - hours) *60;
@@ -392,10 +407,12 @@ public class SummaryActivity extends AppCompatActivity {
                 // user interface.
                 //displayGattServices(mBluetoothLeService.getSupportedGattServices());
             } else if (BLEService.ACTION_DATA_AVAILABLE.equals(action)) {
+                //TODO:: uncomment code with functional BLE module
+
                 //Log.i("data",intent.getStringExtra(BLEService.EXTRA_DATA));
                 //String characteristic = intent.getStringExtra("characteristic");
                 //if(characteristic.equals(dataCharacteristicUUID)){
-                    mBLEService.readCharacteristic(dataCharacteristic);
+                   // mBLEService.readCharacteristic(dataCharacteristic);
                 //}
 
                 /*
@@ -405,8 +422,6 @@ public class SummaryActivity extends AppCompatActivity {
                 storeStepCount(stepCount); //update in database and in UI display
                 updateHeartRateUI(heartRate);
                 updateStepCount(UI); //store in global variables - depends on what is being displayed in the UI
-
-
                  */
             }
         }
@@ -482,44 +497,87 @@ public class SummaryActivity extends AppCompatActivity {
                 Type listType = new TypeToken<List<String>>() {}.getType();
                 List<String> target = new LinkedList<String>();
 
-                HeartRate signedInUser = new HeartRate();
 
                 // Loop through query results
                 for (int i = 0; i < result.size(); i++) {
                     Log.i("result", result.get(i).toString());
                     String jsonFormOfItem = gson.toJson(result.get(i));
 
-                    signedInUser = gson.fromJson(jsonFormOfItem, HeartRate.class);
+                    userHR = gson.fromJson(jsonFormOfItem, HeartRate.class);
                 }
 
                 // Add your code here to deal with the data result
-                Log.d("Query result: ", stringBuilder.toString());
+                Log.d("Query result: ", Integer.toString(userHR.getCurrentHR()));
 
                 if (result.isEmpty()) {
-                    Log.i("Login", "User is not authenticated");
-
-                    //TODO:: move to a seperate handler
-                    //alertAuthenticationFailed();
-
-                }
-                else{
-                    //If user has been authenticated
-                    //Transition to summary page
-                  /*  Intent displaySummary = new Intent(getApplicationContext(), SummaryActivity.class);
-                    //TODO:: pass in authentication token here
-                    displaySummary.putExtra("deviceAddress", signedInUser.getDeviceAddress());
-                    displaySummary.putExtra("firstName", signedInUser.getFirstName());
-                    displaySummary.putExtra("lastName", signedInUser.getLastName());
-                    displaySummary.putExtra("username", signedInUser.getUsername());
-                    displaySummary.putExtra("goalSetting", signedInUser.getGoalSetting());
-                    startActivity(displaySummary);
-                    finish();*/
+                    Log.i("Data", "User does not have long term data");
 
                 }
             }
         }).start();
 
 
+    }
+
+    private void getStepDB(){
+        //query database for heart data
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                Looper.prepare();
+
+                StepCount sc = new StepCount();
+                sc.setUsername(user.getUsername());
+
+
+                DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression()
+                        .withHashKeyValues(sc)
+                        .withConsistentRead(false);
+
+                //query database
+                // PaginatedList<UserAccount> result = dynamoDBMapper.query(UserAccount.class, queryExpression);
+                List<StepCount> result = dynamoDBMapper.query(StepCount.class, queryExpression);
+
+                Gson gson = new Gson();
+                StringBuilder stringBuilder = new StringBuilder();
+                Type listType = new TypeToken<List<String>>() {}.getType();
+                List<String> target = new LinkedList<String>();
+
+
+                // Loop through query results
+                for (int i = 0; i < result.size(); i++) {
+                    Log.i("result", result.get(i).toString());
+                    String jsonFormOfItem = gson.toJson(result.get(i));
+
+                    userSteps = gson.fromJson(jsonFormOfItem, StepCount.class);
+                }
+
+                // Add your code here to deal with the data result
+                Log.d("Query result: ", Integer.toString(userSteps.getCurrentSteps()));
+
+                if (result.isEmpty()) {
+                    Log.i("Data", "User does not have long term data");
+
+                }
+            }
+        }).start();
+
+
+    }
+
+    //utilizing observer design pattern to notify changes from database call
+    public void update(Observable obs, Object obj){
+        if(obj == userHR){
+            //notify data changed
+            Log.i("State", "Heart rate state has changed");
+
+            //call summary data(assuming thats the first screen)
+        }
+        else if(obj == userSteps){
+            Log.i("State", "Step count state has changed");
+
+        }
     }
 
 

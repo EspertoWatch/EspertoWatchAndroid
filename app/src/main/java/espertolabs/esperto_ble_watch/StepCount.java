@@ -1,5 +1,6 @@
 package espertolabs.esperto_ble_watch;
 
+import java.util.Observable;
 import java.util.Set;
 
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBAttribute;
@@ -11,7 +12,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.google.common.collect.Table;
 
 @DynamoDBTable(tableName="espertowatch-mobilehub-1699109079-StepCount")
-public class StepCount {
+public class StepCount extends Observable{
 
     private String username;
     private int currentSteps;
@@ -33,6 +34,8 @@ public class StepCount {
 
     public void setCurrentSteps(int currentSteps) {
         this.currentSteps = currentSteps;
+        setChanged();
+        notifyObservers();
     }
 
     @DynamoDBAttribute(attributeName = "dailySteps")
@@ -42,6 +45,8 @@ public class StepCount {
 
     public void setDailySteps(Set<Integer> dailySteps) {
         this.dailySteps = dailySteps;
+        setChanged();
+        notifyObservers();
     }
 
 }
