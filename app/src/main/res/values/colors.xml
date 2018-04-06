@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="visible" type="id"/>
+    <item name="masked" type="id"/>
+    <color name="colorPrimary">#000000</color>
+    <color name="colorWhite">#ffffff</color>
+    <color name="colorAccent">#abeaf1</color>
+    <color name="background">#5db1b6</color>
+    <color name="accent">#ff7080</color>
+    <color name="green">#bdf708</color>
+    <color name="heart">#F50057</color>
+    <color name="steps">#2196F3</color>
+    <color name="navbar">#2196f3</color>
+</resources>

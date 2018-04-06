@@ -1,0 +1,44 @@
+<resources>
+    <string name="app_name">ESPERTO WATCH</string>
+    <string name="team_name">Esperto Watch</string>
+    <string name="title_activity_register">Register</string>
+    <string name="activity_scan">Select a Device</string>
+    <string name="app_desc_top">Wireless. Wearable. Open Source</string>
+
+    <!-- Strings related to Login Activity -->
+    <string name="prompt_first_name">First Name</string>
+    <string name="username">Username</string>
+    <string name="prompt_last_name">Last Name</string>
+    <string name="prompt_username">Username</string>
+    <string name="prompt_password">Password</string>
+    <string name="prompt_device">Register Device</string>
+    <string name="prompt_password_again">Re-enter Password</string>
+    <string name="action_sign_in">Create Account</string>
+    <string name="action_sign_in_short">Sign in</string>
+    <string name="action_login">Login</string>
+    <string name="error_invalid_pass">This email address is invalid</string>
+    <string name="error_invalid_password">This password is too short</string>
+    <string name="error_incorrect_password">This password is incorrect</string>
+    <string name="error_field_required">This field is required</string>
+    <string name="continue_prompt">Continue</string>
+        <string name="error_message">Authentication failure.</string>
+    <string name="try_again">Incorrect username or password, please try again :)</string>
+    <string name="ok">OK</string>
+
+    <!-- Strings related to Register activity-->
+    <string name="default_setting">Default Setting</string>
+    <string name="goal_setting">Choose Goal Setting</string>
+
+
+    <!-- Strings related to Summary Activity -->
+    <string name="title_heart">Heart Rate</string>
+    <string name="title_activity_summary">Esperto Watch</string>
+    <string name="title_profile">Summary</string>
+    <string name="title_steps">Step Count</string>
+    <string name="app_name_lower">Esperto Watch</string>
+    <string name="connected">connected</string>
+    <string name="connecting">connected</string>
+    <string name="main_user">mmacmahon</string>
+    <string name="esperto_device_name">BC49DC9</string>
+
+</resources>

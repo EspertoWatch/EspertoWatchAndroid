@@ -1,0 +1,41 @@
+--- !com.amazonaws.mobilehub.v0.Project
+apps: 
+  android: !com.amazonaws.mobilehub.v0.AppDO {}
+features: 
+  database: !com.amazonaws.mobilehub.v0.Database
+    components: 
+      database-nosql: !com.amazonaws.mobilehub.v0.NoSQLDatabase
+        tables: 
+          - !com.amazonaws.mobilehub.v0.NoSQLTable
+            attributes: 
+              username: S
+            hashKeyName: username
+            hashKeyType: S
+            rangeKeyName: ""
+            rangeKeyType: ""
+            tableName: ___DYNAMIC_PREFIX___-Accounts
+            tablePrivacy: public
+          - !com.amazonaws.mobilehub.v0.NoSQLTable
+            attributes: 
+              username: S
+            hashKeyName: username
+            hashKeyType: S
+            rangeKeyName: ""
+            rangeKeyType: ""
+            tableName: ___DYNAMIC_PREFIX___-StepCount
+            tablePrivacy: public
+          - !com.amazonaws.mobilehub.v0.NoSQLTable
+            attributes: 
+              username: S
+            hashKeyName: username
+            hashKeyType: S
+            rangeKeyName: ""
+            rangeKeyType: ""
+            tableName: ___DYNAMIC_PREFIX___-HeartRate
+            tablePrivacy: public
+  mobile-analytics: !com.amazonaws.mobilehub.v0.Pinpoint
+    components: 
+      analytics: !com.amazonaws.mobilehub.v0.PinpointAnalytics {}
+  sign-in: !com.amazonaws.mobilehub.v0.SignIn {}
+name: EspertoWatch
+region: us-east-1

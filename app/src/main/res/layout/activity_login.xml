@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/colorWhite">
+
+    <EditText
+        android:id="@+id/username"
+        android:layout_width="294dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/logoImageView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="33dp"
+        android:ems="10"
+        android:hint="@string/username"
+        android:inputType="textPersonName"
+        android:textColor="@color/colorPrimary"
+        android:textColorHint="#d3d3d3" />
+
+    <EditText
+        android:id="@+id/password"
+        android:layout_width="292dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/username"
+        android:layout_centerHorizontal="true"
+        android:ems="10"
+        android:hint="@string/prompt_password"
+        android:inputType="textPassword"
+        android:textColor="@color/colorPrimary"
+        android:textColorHint="#d3d3d3" />
+
+
+    <ImageView
+        android:id="@+id/logoImageView"
+        android:layout_width="169dp"
+        android:layout_height="105dp"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="60dp"
+        app:srcCompat="@drawable/logo" />
+
+    <Button
+        android:id="@+id/createAccountButton"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="137dp"
+        android:layout_height="61dp"
+        android:layout_below="@+id/facebookLogin"
+        android:layout_centerHorizontal="true"
+        android:background="@color/colorWhite"
+        android:onClick="createAccount"
+        android:text="Create an account"
+        android:textColor="@color/com_facebook_blue"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        tools:text="Create an account" />
+
+    <Button
+        android:id="@+id/customLogin"
+        android:layout_width="291dp"
+        android:layout_height="61dp"
+        android:layout_alignEnd="@+id/password"
+        android:layout_alignStart="@+id/password"
+        android:layout_below="@+id/username"
+        android:layout_marginEnd="1dp"
+        android:layout_marginTop="53dp"
+        android:backgroundTint="@color/navbar"
+        android:onClick="checkCredentials"
+        android:text="@string/action_login"
+        android:textColor="@color/colorWhite"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/googleLogin"
+        android:layout_width="296dp"
+        android:layout_height="50dp"
+        android:layout_below="@+id/customLogin"
+        android:layout_centerHorizontal="true"
+        android:background="@drawable/google"
+        tools:ignore="ContentDescription" />
+
+    <Button
+        android:id="@+id/facebookLogin"
+        android:layout_width="285dp"
+        android:layout_height="51dp"
+        android:layout_alignEnd="@+id/googleLogin"
+        android:layout_alignStart="@+id/googleLogin"
+        android:layout_below="@+id/googleLogin"
+        android:layout_marginEnd="7dp"
+        android:layout_marginStart="4dp"
+        android:background="@drawable/facebook" />
+
+</RelativeLayout>
