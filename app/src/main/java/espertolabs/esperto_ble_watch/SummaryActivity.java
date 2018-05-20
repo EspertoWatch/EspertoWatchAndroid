@@ -566,13 +566,13 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
     }
 
-    //utilizing observer design pattern to notify changes from database call
+    //utilizing observer design pattern to notify changes from database
+    //TODO:: add for future improvement
     public void update(Observable obs, Object obj){
         if(obj == userHR){
             //notify data changed
             Log.i("State", "Heart rate state has changed");
 
-            //call summary data(assuming thats the first screen)
         }
         else if(obj == userSteps){
             Log.i("State", "Step count state has changed");
