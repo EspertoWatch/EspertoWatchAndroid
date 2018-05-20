@@ -67,6 +67,7 @@ these screens, with the dependency on actual "faked" data, over spans of the day
 - Make UI pretty
 - Add additional graphs 
 - Create a new activity/settings option to allow users to modify their account information (including goal setting)
+- Catch SMS/phone events and send them via BLE to watch
 
 ### BLE
 
