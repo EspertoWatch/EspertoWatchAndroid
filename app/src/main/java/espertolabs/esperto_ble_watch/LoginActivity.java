@@ -1,7 +1,9 @@
 package espertolabs.esperto_ble_watch;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -18,6 +20,26 @@ import android.widget.TextView;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.mobile.client.AWSMobileClient;
+
+//all cognito imports here
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoDevice;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUser;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserAttributes;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserCodeDeliveryDetails;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserDetails;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserPool;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserSession;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.AuthenticationContinuation;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.AuthenticationDetails;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.ChallengeContinuation;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.ChooseMfaContinuation;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.MultiFactorAuthenticationContinuation;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.NewPasswordContinuation;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.AuthenticationHandler;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.GenericHandler;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.GetDetailsHandler;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.SignUpHandler;
+
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBQueryExpression;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.PaginatedList;
@@ -41,6 +63,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by m2macmah on 3/17/2018.
@@ -55,8 +78,10 @@ public class LoginActivity extends AppCompatActivity {
 
     //TODO:: move
     // Declare a DynamoDBMapper object
-    DynamoDBMapper dynamoDBMapper; //map tables to Java classes
-    AmazonDynamoDBClient dynamoDBClient;
+    //DynamoDBMapper dynamoDBMapper; //map tables to Java classes
+    //AmazonDynamoDBClient dynamoDBClient;
+
+    CognitoUserPool userPool;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +92,7 @@ public class LoginActivity extends AppCompatActivity {
         Button customLogin = (Button) findViewById(R.id.customLogin);
         usernameView = (TextView) findViewById(R.id.username); //accept custom username
         passwordView = (TextView) findViewById(R.id.password); //accept custom password
-
+        /*
         // Instantiate a AmazonDynamoDBMapperClient
         dynamoDBClient = Region.getRegion(Regions.US_EAST_1)
                 .createClient(AmazonDynamoDBClient.class,
@@ -79,6 +104,8 @@ public class LoginActivity extends AppCompatActivity {
                 .dynamoDBClient(dynamoDBClient)
                 .awsConfiguration(AWSMobileClient.getInstance().getConfiguration())
                 .build();
+        */
+        userPool = new CognitoUserPool(getApplicationContext(), getString(R.string.cognito_userpool_id), getString(R.string.cognito_client_id), getString(R.string.cognito_client_secret), Regions.fromName(getString(R.string.cognito_region)));
 
     }
 
@@ -97,8 +124,44 @@ public class LoginActivity extends AppCompatActivity {
     protected void onDestroy(){
         super.onDestroy();
     }
-    //authenticate user with stored password
 
+    // Callback handler for the sign-in process
+    AuthenticationHandler authenticationHandler = new AuthenticationHandler() {
+        @Override
+        public void onSuccess(CognitoUserSession userSession, CognitoDevice newDevice) {
+            Log.d("userSession", userSession.toString());
+            //todo: get rid of dummy vals
+            Intent displaySummary = new Intent(getApplicationContext(), SummaryActivity.class);
+            displaySummary.putExtra("deviceAddress", "defaultAddress");
+            displaySummary.putExtra("firstName", "defaultFirstName");
+            displaySummary.putExtra("lastName", "defaultLastName");
+            displaySummary.putExtra("username", userSession.getUsername());
+            displaySummary.putExtra("goalSetting", "default");
+            startActivity(displaySummary);
+        }
+        @Override
+        public void getAuthenticationDetails(AuthenticationContinuation authenticationContinuation, String userId) {
+            getUserAuthentication(authenticationContinuation, userId);
+        }
+
+        @Override
+        public void getMFACode(MultiFactorAuthenticationContinuation multiFactorAuthenticationContinuation) {
+            // Multi-factor authentication is required; get the verification code from user
+            //multiFactorAuthenticationContinuation.setMfaCode(mfaVerificationCode);
+            // Allow the sign-in process to continue
+            //multiFactorAuthenticationContinuation.continueTask();
+        }
+
+        @Override
+        public void onFailure(Exception exception) {
+            alertAuthenticationFailure();
+            // Sign-in failed, check exception for the cause
+        }
+        @Override
+        public void authenticationChallenge(ChallengeContinuation continuation) {
+            //need to define this later
+        }
+    };
 
     public void checkCredentials(View v){
         //TODO:: modularize into handler
@@ -109,15 +172,55 @@ public class LoginActivity extends AppCompatActivity {
         String passwordInput = passwordView.getText().toString();
         Log.d("username",usernameInput);
         Log.i("password",passwordInput);
+        CognitoUser user = userPool.getUser(usernameInput);
+        Log.d("cognitoUser", user.toString());
 
         //Authenticate user
-        authenticate(usernameInput, passwordInput);
+        user.getSessionInBackground(authenticationHandler);
+        //authenticate(usernameInput, passwordInput);
     }
 
+    private void getUserAuthentication(AuthenticationContinuation continuation, String username) {
+        String usernameInput = usernameView.getText().toString();
+        String passwordInput = passwordView.getText().toString();
+        Log.d("username",usernameInput);
+        Log.i("password",passwordInput);
+        AuthenticationDetails authenticationDetails = new AuthenticationDetails(usernameInput, passwordInput, null);
+        continuation.setAuthenticationDetails(authenticationDetails);
+        continuation.continueTask();
+    }
+
+    //alert user of failed login attempt
+    public void alertAuthenticationFailure(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert);
+        builder.setMessage(R.string.try_again)
+                .setTitle(R.string.error_message);
+
+        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User clicked OK button
+                dialog.dismiss();
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+
+
+    public void createAccount(View v){
+        //TODO:: send intent to register activity
+        Intent registerUser = new Intent(v.getContext(), RegisterActivity.class);
+        startActivity(registerUser);
+        finish();
+    }
+
+    /*
     //TODO:: abstract out
     //Authenticate user - confirm password and username combination
     private void authenticate(final String username, final String password){
         //query database for account
+        //todo: use cognito instead
 
         boolean test = false;
         new Thread(new Runnable() {
@@ -188,32 +291,7 @@ public class LoginActivity extends AppCompatActivity {
                 }
             }
         }).start();
-
-
     }
-    //alert user of failed login attempt
-    public void alertAuthenticationFailure(){
-        AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert);
-        builder.setMessage(R.string.try_again)
-                .setTitle(R.string.error_message);
-
-        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-                // User clicked OK button
-                dialog.dismiss();
-            }
-        });
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
-
-
-
-    public void createAccount(View v){
-        //TODO:: send intent to register activity
-        Intent registerUser = new Intent(v.getContext(), RegisterActivity.class);
-        startActivity(registerUser);
-        finish();
-    }
+    */
 }
 

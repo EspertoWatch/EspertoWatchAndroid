@@ -41,4 +41,11 @@
     <string name="main_user">mmacmahon</string>
     <string name="esperto_device_name">BC49DC9</string>
 
+    <!-- Strings related to Cognito -->
+    <string name="cognito_web_domain">esperto-watch-app.auth.us-east-1.amazoncognito.com</string>
+    <string name="cognito_client_id">3m4tc04cp9j5b6n19o9f4q9eqm</string>
+    <string name="cognito_client_secret">8vbtptvd123itikbshjpe4udu61ir0ol4qffbh5bpuu6kori12v</string>
+    <string name="cognito_region">us-east-1</string>
+    <string name="cognito_userpool_id">us-east-1_RL95jbC5g</string>
+
 </resources>
