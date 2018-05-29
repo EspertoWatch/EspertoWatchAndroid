@@ -57,7 +57,9 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -80,8 +82,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     private boolean mConnected = false;
     private String dataCharacteristicUUID = "00002a05-0000-1000-8000-00805f9b34fb";
     private BluetoothGattCharacteristic dataCharacteristic;
-    DynamoDBMapper dynamoDBMapper; //map tables to Java classes
-    AmazonDynamoDBClient dynamoDBClient;
+    //DynamoDBMapper dynamoDBMapper; //map tables to Java classes
+    //AmazonDynamoDBClient dynamoDBClient;
     private boolean summaryDisplay = false;
     private boolean detailedHeart = false;
     private boolean detailedStep = false;
@@ -161,6 +163,9 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
 
         // Instantiate a AmazonDynamoDBMapperClient
+        //Commenting out because we're eventually replacing with ApiGateway!
+        //Todo: connect to ApiGateway
+        /*
         dynamoDBClient = Region.getRegion(Regions.US_EAST_1)
                 .createClient(AmazonDynamoDBClient.class,
                         AWSMobileClient.getInstance().getCredentialsProvider(),
@@ -172,6 +177,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 .dynamoDBClient(dynamoDBClient)
                 .awsConfiguration(AWSMobileClient.getInstance().getConfiguration())
                 .build();
+        */
 
         //retrieve heart rate data
         getHRDB();
@@ -483,12 +489,19 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 HeartRate hr = new HeartRate();
                 hr.setUsername(user.getUsername());
 
+                //insert some fake vals for now
+                Set<Integer> dailyHR = new HashSet<>(Arrays.asList(80, 90, 100, 90, 80));
+                Integer currentHR = 85;
+                hr.setCurrentHR(currentHR);
+                hr.setDailyHR(dailyHR);
 
+                //query database
+                //todo: replace with apigateway
+                /*
                 DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression()
                         .withHashKeyValues(hr)
                         .withConsistentRead(false);
 
-                //query database
                 // PaginatedList<UserAccount> result = dynamoDBMapper.query(UserAccount.class, queryExpression);
                 List<HeartRate> result = dynamoDBMapper.query(HeartRate.class, queryExpression);
 
@@ -513,6 +526,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     Log.i("Data", "User does not have long term data");
 
                 }
+                */
             }
         }).start();
 
@@ -530,12 +544,19 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 StepCount sc = new StepCount();
                 sc.setUsername(user.getUsername());
 
+                //insert some fake vals for now
+                Set<Integer> dailySteps = new HashSet<>(Arrays.asList(8000, 9000, 10000, 9000, 8000));
+                Integer currentSteps = 8500;
+                sc.setCurrentSteps(currentSteps);
+                sc.setDailySteps(dailySteps);
 
+                //query database
+                //todo: replace with apigateway
+                /*
                 DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression()
                         .withHashKeyValues(sc)
                         .withConsistentRead(false);
 
-                //query database
                 // PaginatedList<UserAccount> result = dynamoDBMapper.query(UserAccount.class, queryExpression);
                 List<StepCount> result = dynamoDBMapper.query(StepCount.class, queryExpression);
 
@@ -560,6 +581,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     Log.i("Data", "User does not have long term data");
 
                 }
+                */
             }
         }).start();
 
