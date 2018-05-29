@@ -486,14 +486,12 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
                 Looper.prepare();
 
-                HeartRate hr = new HeartRate();
-                hr.setUsername(user.getUsername());
-
                 //insert some fake vals for now
                 Set<Integer> dailyHR = new HashSet<>(Arrays.asList(80, 90, 100, 90, 80));
                 Integer currentHR = 85;
-                hr.setCurrentHR(currentHR);
-                hr.setDailyHR(dailyHR);
+                userHR.setCurrentHR(currentHR);
+                userHR.setDailyHR(dailyHR);
+                userHR.setUsername(user.getUsername());
 
                 //query database
                 //todo: replace with apigateway
@@ -541,14 +539,12 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
                 Looper.prepare();
 
-                StepCount sc = new StepCount();
-                sc.setUsername(user.getUsername());
-
                 //insert some fake vals for now
                 Set<Integer> dailySteps = new HashSet<>(Arrays.asList(8000, 9000, 10000, 9000, 8000));
                 Integer currentSteps = 8500;
-                sc.setCurrentSteps(currentSteps);
-                sc.setDailySteps(dailySteps);
+                userSteps.setCurrentSteps(currentSteps);
+                userSteps.setDailySteps(dailySteps);
+                userSteps.setUsername(user.getUsername());
 
                 //query database
                 //todo: replace with apigateway
