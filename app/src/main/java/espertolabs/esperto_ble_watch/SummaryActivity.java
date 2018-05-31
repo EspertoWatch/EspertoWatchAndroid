@@ -348,11 +348,10 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             BLEService.LocalBinder binder = (BLEService.LocalBinder) service;
             mServiceBound = true;
             mBLEService = binder.getService();
-            boolean success = mBLEService.initialize();
-            //connect to the
-            mBLEService.connect(user.getDeviceAddress());
-
-
+            if (mBLEService.initialize()) {
+                user.setDeviceAddress("D4:49:8C:44:48:82");
+                mBLEService.connect(user.getDeviceAddress());
+            }
         }
 
         @Override
