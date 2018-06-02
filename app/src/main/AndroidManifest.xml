@@ -16,7 +16,7 @@
     <application
         android:allowBackup="true"
         android:icon="@drawable/logo"
-        android:label=""
+        android:label="Esperto"
         android:roundIcon="@drawable/logo"
         android:supportsRtl="true"
         android:theme="@style/NoActionBar">
