@@ -134,7 +134,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         Toolbar toolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(toolbar);
         Drawable drawable = ContextCompat.getDrawable(getApplicationContext(),R.drawable.settings_ic);
-        toolbar.setOverflowIcon(drawable);
 
         messageUser = (TextView) findViewById(R.id.messageUser);
         heartChart = (LineChart)findViewById(R.id.heartChart); //used to display daily HR
