@@ -11,14 +11,14 @@ import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.google.common.collect.Table;
 
-@DynamoDBTable(tableName="espertowatch-mobilehub-1699109079-HeartRate")
+//@DynamoDBTable(tableName="espertowatch-mobilehub-1699109079-HeartRate")
 public class HeartRate extends Observable{
 
     private String username;
     private int currentHR;
     private Set<Integer> dailyHR;
 
-    @DynamoDBHashKey(attributeName = "username")
+    //@DynamoDBHashKey(attributeName = "username")
     public String getUsername() {
         return username;
     }
@@ -27,26 +27,26 @@ public class HeartRate extends Observable{
         this.username = username;
     }
 
-    @DynamoDBAttribute(attributeName = "currentHR")
+    //@DynamoDBAttribute(attributeName = "currentHR")
     public int getCurrentHR() {
         return currentHR;
     }
 
     public void setCurrentHR(int currentHR) {
         this.currentHR = currentHR;
-        setChanged();
-        notifyObservers();
+        //setChanged();
+        //notifyObservers();
     }
 
-    @DynamoDBAttribute(attributeName = "dailyHR")
+    //@DynamoDBAttribute(attributeName = "dailyHR")
     public Set<Integer> getDailyHR() {
         return dailyHR;
     }
 
     public void setDailyHR(Set<Integer> dailyHR) {
         this.dailyHR = dailyHR;
-        setChanged();
-        notifyObservers();
+        //setChanged();
+        //notifyObservers();
     }
 
 }

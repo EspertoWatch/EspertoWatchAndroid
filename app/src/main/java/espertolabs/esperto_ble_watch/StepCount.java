@@ -11,14 +11,14 @@ import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.google.common.collect.Table;
 
-@DynamoDBTable(tableName="espertowatch-mobilehub-1699109079-StepCount")
+//@DynamoDBTable(tableName="espertowatch-mobilehub-1699109079-StepCount")
 public class StepCount extends Observable{
 
     private String username;
     private int currentSteps;
     private Set<Integer> dailySteps;
 
-    @DynamoDBHashKey(attributeName = "username")
+    //@DynamoDBHashKey(attributeName = "username")
     public String getUsername() {
         return username;
     }
@@ -27,26 +27,26 @@ public class StepCount extends Observable{
         this.username = username;
     }
 
-    @DynamoDBAttribute(attributeName = "currentSteps")
+    //@DynamoDBAttribute(attributeName = "currentSteps")
     public int getCurrentSteps() {
         return currentSteps;
     }
 
     public void setCurrentSteps(int currentSteps) {
         this.currentSteps = currentSteps;
-        setChanged();
-        notifyObservers();
+        //setChanged();
+        //notifyObservers();
     }
 
-    @DynamoDBAttribute(attributeName = "dailySteps")
+    //@DynamoDBAttribute(attributeName = "dailySteps")
     public Set<Integer> getDailySteps() {
         return dailySteps;
     }
 
     public void setDailySteps(Set<Integer> dailySteps) {
         this.dailySteps = dailySteps;
-        setChanged();
-        notifyObservers();
+        //setChanged();
+        //notifyObservers();
     }
 
 }
