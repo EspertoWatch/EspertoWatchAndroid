@@ -21,7 +21,7 @@
     <string name="error_incorrect_password">This password is incorrect</string>
     <string name="error_field_required">This field is required</string>
     <string name="continue_prompt">Continue</string>
-        <string name="error_message">Authentication failure.</string>
+    <string name="error_message">Authentication failure.</string>
     <string name="try_again">Incorrect username or password, please try again :)</string>
     <string name="ok">OK</string>
 
@@ -39,7 +39,7 @@
     <string name="connected">connected</string>
     <string name="connecting">connected</string>
     <string name="main_user">mmacmahon</string>
-    <string name="esperto_device_name">BC49DC9</string>
+    <string name="esperto_device_name">Esperto</string>
 
     <!-- Strings related to Cognito -->
     <string name="cognito_web_domain">esperto-watch-app.auth.us-east-1.amazoncognito.com</string>

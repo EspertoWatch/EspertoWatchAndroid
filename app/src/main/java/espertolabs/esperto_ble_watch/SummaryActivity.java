@@ -52,6 +52,7 @@ import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
 import com.github.mikephil.charting.utils.ColorTemplate;
 import com.github.mikephil.charting.utils.Utils;
 import com.google.android.gms.common.data.DataBufferObserver;
+import com.google.common.base.Utf8;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -241,7 +242,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
 
         }
-        else return;
     }
 
     //Retrieve data from AWS services
@@ -348,7 +348,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             mServiceBound = true;
             mBLEService = binder.getService();
             if (mBLEService.initialize()) {
-                user.setDeviceAddress("D4:49:8C:44:48:82");
                 mBLEService.connect(user.getDeviceAddress());
             }
         }
@@ -384,6 +383,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             } else if (BLEService.
                     ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
                 Log.i("Update", "Services discovered");
+                mBLEService.enableTXNotification();
 
                 List<BluetoothGattService> gattServices = mBLEService.getSupportedGattServices();
 
@@ -403,7 +403,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                         dataCharacteristic = gattCharacteristic;
                         mBLEService.readCharacteristic(gattCharacteristic);
                         //}
-                        //Log.d("DEBUG", "PRINT UUIDS: " + uuid);
+                        Log.d("DEBUG", "PRINT UUIDS: " + uuid);
                     }
                 }
 
@@ -411,10 +411,17 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 // user interface.
                 //displayGattServices(mBluetoothLeService.getSupportedGattServices());
             } else if (BLEService.ACTION_DATA_AVAILABLE.equals(action)) {
+                byte[] rcv = intent.getByteArrayExtra(BLEService.EXTRA_DATA);
+                Log.i("DATA","AVAIL");
+                Log.i("DATA RCV'D",Arrays.toString(rcv));
+                String message = "You sent: ";
+                byte[] value = message.getBytes();
+                mBLEService.writeRXCharacteristic(value);
+                mBLEService.writeRXCharacteristic(rcv);
                 //TODO:: uncomment code with functional BLE module
 
-                //Log.i("data",intent.getStringExtra(BLEService.EXTRA_DATA));
-                //String characteristic = intent.getStringExtra("characteristic");
+                //Log.i("data",intent.getResources().getStringExtra(BLEService.EXTRA_DATA));
+                //String characteristic = intent.getResources().getStringExtra("characteristic");
                 //if(characteristic.equals(dataCharacteristicUUID)){
                    // mBLEService.readCharacteristic(dataCharacteristic);
                 //}
@@ -455,6 +462,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         intentFilter.addAction(BLEService.ACTION_GATT_DISCONNECTED);
         intentFilter.addAction(BLEService.ACTION_GATT_SERVICES_DISCOVERED);
         intentFilter.addAction(BLEService.ACTION_DATA_AVAILABLE);
+        intentFilter.addAction(BLEService.EXTRA_DATA);
         return intentFilter;
     }
 

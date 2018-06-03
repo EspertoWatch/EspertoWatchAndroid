@@ -130,12 +130,13 @@ public class RegisterActivity extends AppCompatActivity {
         }
 
         //check if goal settings have been set
-        String goalTxt = goalButton.getText().toString();
-        if(goalTxt.equals(R.string.goal_setting)) {
-            filled = false;
-        }
-        //TODO:: add custom goal settings here - set initially to default
-        else userInfo[4] = "DEFAULT";
+//        String goalTxt = goalButton.getText().toString();
+//        if(goalTxt.equals(getResources().getString(R.string.goal_setting))) {
+//            filled = false;
+//        }
+//        //TODO:: add custom goal settings here - set initially to default
+//        else userInfo[4] = "DEFAULT";
+        userInfo[4] = "DEFAULT";
 
         return filled;
     }
@@ -146,7 +147,7 @@ public class RegisterActivity extends AppCompatActivity {
         Button b = (Button)v;
         //TODO:: alternate between goal preferences
         //TODO:: use to determine whether to prompt the user with a survey
-        b.setText(R.string.default_setting);
+        b.setText(getResources().getString(R.string.default_setting));
         b.setBackgroundColor(getResources().getColor(R.color.accent));
     }
 
