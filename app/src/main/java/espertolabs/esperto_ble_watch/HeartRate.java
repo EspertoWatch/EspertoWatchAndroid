@@ -34,8 +34,8 @@ public class HeartRate extends Observable{
 
     public void setCurrentHR(int currentHR) {
         this.currentHR = currentHR;
-        //setChanged();
-        //notifyObservers();
+        setChanged();
+        notifyObservers();
     }
 
     //@DynamoDBAttribute(attributeName = "dailyHR")
@@ -45,8 +45,8 @@ public class HeartRate extends Observable{
 
     public void setDailyHR(Set<Integer> dailyHR) {
         this.dailyHR = dailyHR;
-        //setChanged();
-        //notifyObservers();
+        setChanged();
+        notifyObservers();
     }
 
 }

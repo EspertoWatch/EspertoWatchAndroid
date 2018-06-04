@@ -9,6 +9,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -94,6 +95,14 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     BarChart stepChart;
     ViewFlipper flipper;
 
+    //Summary values
+    TextView hr_current;
+    TextView steps_current;
+
+    //instantiate api gateway handler
+    final ApiGatewayHandler handler = new ApiGatewayHandler();
+    String userId;
+
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
 
@@ -140,7 +149,26 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         heartChart = (LineChart)findViewById(R.id.heartChart); //used to display daily HR
         stepChart = (BarChart) findViewById(R.id.stepChart); //used to display daily stepCount
         flipper = (ViewFlipper)findViewById(R.id.vf);
+        hr_current = (TextView) findViewById(R.id.heartRateNum);
+        steps_current = (TextView) findViewById(R.id.stepCount);
 
+        mTextMessage = (TextView) findViewById(R.id.message);
+        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+
+        //check if Bluetooth is enabled
+        //commenting out ble stuff for now
+        /*
+        Intent intent = new Intent(this, BLEService.class);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+
+        registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+        */
+
+        SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("userId", Context.MODE_PRIVATE);
+        userId = sharedPref.getString("USER_ID", "");
+
+        Log.d("get_u_id", userId);
 
         //retrieve intent
         Intent userIntent = getIntent();
@@ -150,38 +178,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         user.setUsername(userIntent.getStringExtra("username"));
         user.setGoalSetting(userIntent.getStringExtra("goalSetting"));
 
-        greetUser();
-
-        mTextMessage = (TextView) findViewById(R.id.message);
-        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-
-        //check if Bluetooth is enabled
-        Intent intent = new Intent(this, BLEService.class);
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-
-        registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
-
-        // Instantiate a AmazonDynamoDBMapperClient
-        //Commenting out because we're eventually replacing with ApiGateway!
-        //Todo: connect to ApiGateway
-        /*
-        dynamoDBClient = Region.getRegion(Regions.US_EAST_1)
-                .createClient(AmazonDynamoDBClient.class,
-                        AWSMobileClient.getInstance().getCredentialsProvider(),
-                        new ClientConfiguration()
-                );
-
-
-        this.dynamoDBMapper = DynamoDBMapper.builder()
-                .dynamoDBClient(dynamoDBClient)
-                .awsConfiguration(AWSMobileClient.getInstance().getConfiguration())
-                .build();
-        */
-
-        //retrieve heart rate data
+        //retrieve data
         getHRDB();
         getStepDB();
+
+        greetUser();
 
     }
 
@@ -193,17 +194,15 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     //TODO:: add a loading screen to keep user occupied before data display
     private void displaySummary(){
         flipper.setDisplayedChild(3);
-        TextView hr = (TextView) findViewById(R.id.heartRateNum);
-        TextView step = (TextView) findViewById(R.id.stepCount);
         //using default goals for now
         if(userHR.getUsername() == null || userSteps.getUsername() == null){
             Log.i("Fail", "user has no long term data");
-            hr.setText("0");
-            step.setText("0");
+            hr_current.setText("0");
+            steps_current.setText("0");
             return; //just displaying random stand in data if not long term user
         }
-        hr.setText(Integer.toString(userHR.getCurrentHR()));
-        step.setText(Integer.toString(userSteps.getCurrentSteps()));
+        hr_current.setText(Integer.toString(userHR.getCurrentHR()));
+        steps_current.setText(Integer.toString(userSteps.getCurrentSteps()));
     }
 
     private void displayHeart(){
@@ -483,8 +482,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         new Thread(new Runnable() {
             @Override
             public void run() {
-
-                Looper.prepare();
+                //send request via apigateway
+                handler.getHeartRate(userId);
 
                 //insert some fake vals for now
                 Set<Integer> dailyHR = new HashSet<>(Arrays.asList(80, 90, 100, 90, 80));
@@ -493,42 +492,10 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 userHR.setDailyHR(dailyHR);
                 userHR.setUsername(user.getUsername());
 
-                //query database
-                //todo: replace with apigateway
-                /*
-                DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression()
-                        .withHashKeyValues(hr)
-                        .withConsistentRead(false);
-
-                // PaginatedList<UserAccount> result = dynamoDBMapper.query(UserAccount.class, queryExpression);
-                List<HeartRate> result = dynamoDBMapper.query(HeartRate.class, queryExpression);
-
-                Gson gson = new Gson();
-                StringBuilder stringBuilder = new StringBuilder();
-                Type listType = new TypeToken<List<String>>() {}.getType();
-                List<String> target = new LinkedList<String>();
-
-
-                // Loop through query results
-                for (int i = 0; i < result.size(); i++) {
-                    Log.i("result", result.get(i).toString());
-                    String jsonFormOfItem = gson.toJson(result.get(i));
-
-                    userHR = gson.fromJson(jsonFormOfItem, HeartRate.class);
-                }
-
-                // Add your code here to deal with the data result
-                Log.d("Query result: ", Integer.toString(userHR.getCurrentHR()));
-
-                if (result.isEmpty()) {
-                    Log.i("Data", "User does not have long term data");
-
-                }
-                */
+                //update views
+                //hr_current.setText(userHR.getCurrentHR());
             }
         }).start();
-
-
     }
 
     private void getStepDB(){
@@ -536,8 +503,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         new Thread(new Runnable() {
             @Override
             public void run() {
-
-                Looper.prepare();
+                //send request via apigateway
+                handler.getStepCount(userId);
 
                 //insert some fake vals for now
                 Set<Integer> dailySteps = new HashSet<>(Arrays.asList(8000, 9000, 10000, 9000, 8000));
@@ -546,42 +513,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 userSteps.setDailySteps(dailySteps);
                 userSteps.setUsername(user.getUsername());
 
-                //query database
-                //todo: replace with apigateway
-                /*
-                DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression()
-                        .withHashKeyValues(sc)
-                        .withConsistentRead(false);
+                //update views
+                //steps_current.setText(userSteps.getCurrentSteps());
 
-                // PaginatedList<UserAccount> result = dynamoDBMapper.query(UserAccount.class, queryExpression);
-                List<StepCount> result = dynamoDBMapper.query(StepCount.class, queryExpression);
-
-                Gson gson = new Gson();
-                StringBuilder stringBuilder = new StringBuilder();
-                Type listType = new TypeToken<List<String>>() {}.getType();
-                List<String> target = new LinkedList<String>();
-
-
-                // Loop through query results
-                for (int i = 0; i < result.size(); i++) {
-                    Log.i("result", result.get(i).toString());
-                    String jsonFormOfItem = gson.toJson(result.get(i));
-
-                    userSteps = gson.fromJson(jsonFormOfItem, StepCount.class);
-                }
-
-                // Add your code here to deal with the data result
-                Log.d("Query result: ", Integer.toString(userSteps.getCurrentSteps()));
-
-                if (result.isEmpty()) {
-                    Log.i("Data", "User does not have long term data");
-
-                }
-                */
             }
         }).start();
-
-
     }
 
     //utilizing observer design pattern to notify changes from database
@@ -590,13 +526,9 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         if(obj == userHR){
             //notify data changed
             Log.i("State", "Heart rate state has changed");
-
         }
         else if(obj == userSteps){
             Log.i("State", "Step count state has changed");
-
         }
     }
-
-
 }
