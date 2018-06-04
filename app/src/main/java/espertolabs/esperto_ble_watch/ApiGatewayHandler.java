@@ -19,8 +19,9 @@ public class ApiGatewayHandler {
             .addInterceptor(awsInterceptor)
             .build();
 
-    public void getHeartRate(String userId){
+    public String getHeartRate(String userId){
         final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/heartRate/" + userId;
+        String body = "";
         try {
             okhttp3.Request request2 = new okhttp3.Request.Builder()
                     .url(invokeUrl)
@@ -28,15 +29,17 @@ public class ApiGatewayHandler {
                     .build();
             okhttp3.Response response = null;
             response = client.newCall(request2).execute();
-            String body = response.body().string();
+            body = response.body().string();
             Log.d("HR_resp_body", "response " + body);
         } catch (Exception e) {
             Log.d("HR_resp_error", "error " + e);
         }
+        return body;
     }
 
-    public void getStepCount(String userId){
+    public String getStepCount(String userId){
         final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/stepCount/" + userId;
+        String body = "";
         try {
             okhttp3.Request request2 = new okhttp3.Request.Builder()
                     .url(invokeUrl)
@@ -44,11 +47,12 @@ public class ApiGatewayHandler {
                     .build();
             okhttp3.Response response = null;
             response = client.newCall(request2).execute();
-            String body = response.body().string();
+            body = response.body().string();
             Log.d("SC_resp_body", "response " + body);
         } catch (Exception e) {
             Log.d("SC_resp_error", "error " + e);
         }
+        return body;
     }
 
     public String getUserInfo(String userId){

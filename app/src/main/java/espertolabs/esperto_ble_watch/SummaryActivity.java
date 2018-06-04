@@ -479,14 +479,15 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             @Override
             public void run() {
                 //send request via apigateway
-                handler.getHeartRate(userId);
+                String response = handler.getHeartRate(userId);
+                Gson g = new Gson();
+                HeartRate hr = g.fromJson(response, HeartRate.class);
+                userHR.setCurrentHR(hr.getCurrentHR());
 
-                //insert some fake vals for now
+                //insert fake dailyHR vals for now
                 Set<Integer> dailyHR = new HashSet<>(Arrays.asList(80, 90, 100, 90, 80));
-                Integer currentHR = 85;
-                userHR.setCurrentHR(currentHR);
                 userHR.setDailyHR(dailyHR);
-                userHR.setUsername(user.getUsername());
+
             }
         }).start();
     }

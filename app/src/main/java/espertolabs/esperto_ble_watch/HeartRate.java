@@ -1,5 +1,6 @@
 package espertolabs.esperto_ble_watch;
 
+import java.util.HashMap;
 import java.util.Observable;
 import java.util.Set;
 
@@ -17,6 +18,8 @@ public class HeartRate extends Observable{
     private String username;
     private int currentHR;
     private Set<Integer> dailyHR;
+    private HashMap<String, Integer> todayHR;
+    private HashMap<String, Integer> avgDailyHR;
 
     //@DynamoDBHashKey(attributeName = "username")
     public String getUsername() {
@@ -45,6 +48,26 @@ public class HeartRate extends Observable{
 
     public void setDailyHR(Set<Integer> dailyHR) {
         this.dailyHR = dailyHR;
+        setChanged();
+        notifyObservers();
+    }
+
+    public HashMap<String, Integer> getTodayHR() {
+        return todayHR;
+    }
+
+    public void setTodayHR(HashMap<String, Integer> todayHR) {
+        this.todayHR = todayHR;
+        setChanged();
+        notifyObservers();
+    }
+
+    public HashMap<String, Integer> getAvgDailyHR() {
+        return avgDailyHR;
+    }
+
+    public void setAvgDailyHR(HashMap<String, Integer> avgDailyHR) {
+        this.avgDailyHR = avgDailyHR;
         setChanged();
         notifyObservers();
     }
