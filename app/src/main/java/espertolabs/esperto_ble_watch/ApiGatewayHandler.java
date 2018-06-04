@@ -51,8 +51,9 @@ public class ApiGatewayHandler {
         }
     }
 
-    public void getUserInfo(String userId){
+    public String getUserInfo(String userId){
         final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/userInfo/" + userId;
+        String body = "";
         try {
             okhttp3.Request request2 = new okhttp3.Request.Builder()
                     .url(invokeUrl)
@@ -60,10 +61,11 @@ public class ApiGatewayHandler {
                     .build();
             okhttp3.Response response = null;
             response = client.newCall(request2).execute();
-            String body = response.body().string();
+            body = response.body().string();
             Log.d("UI_resp_body", "response " + body);
         } catch (Exception e) {
             Log.d("UI_resp_error", "error " + e);
         }
+        return body;
     }
 }

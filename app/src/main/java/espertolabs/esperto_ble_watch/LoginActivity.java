@@ -141,14 +141,16 @@ public class LoginActivity extends AppCompatActivity {
             new Thread(new Runnable(){
                 @Override
                 public void run(){
-                    handler.getUserInfo(userId);
+                    String response = handler.getUserInfo(userId);
+                    Log.d("User_info_response", response);
+
+                    Gson g = new Gson();
+                    UserAccount user = g.fromJson(response, UserAccount.class);
+                    Log.d("built_user", user.getName());
 
                     Intent displaySummary = new Intent(getApplicationContext(), SummaryActivity.class);
                     displaySummary.putExtra("deviceAddress", "defaultAddress");
-                    displaySummary.putExtra("firstName", "First");
-                    displaySummary.putExtra("lastName", "Last");
-                    displaySummary.putExtra("username", "username");
-                    displaySummary.putExtra("goalSetting", "default");
+                    displaySummary.putExtra("user_obj", user);
                     startActivity(displaySummary);
                 }
             }).start();

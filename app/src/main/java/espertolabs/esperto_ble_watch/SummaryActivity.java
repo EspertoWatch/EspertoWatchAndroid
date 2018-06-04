@@ -172,11 +172,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
         //retrieve intent
         Intent userIntent = getIntent();
-        user.setDeviceAddress(userIntent.getStringExtra("deviceAddress"));
-        user.setFirstName(userIntent.getStringExtra("firstName"));
-        user.setLastName(userIntent.getStringExtra("lastName"));
-        user.setUsername(userIntent.getStringExtra("username"));
-        user.setGoalSetting(userIntent.getStringExtra("goalSetting"));
+        user = (UserAccount) getIntent().getSerializableExtra("user_obj");
 
         //retrieve data
         getHRDB();
@@ -187,7 +183,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     }
 
     public void greetUser(){
-        String greetText = "Welcome " + user.getFirstName() + "!";
+        String greetText = "Welcome " + user.getName() + "!";
         messageUser.setText(greetText);
     }
 
@@ -491,9 +487,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 userHR.setCurrentHR(currentHR);
                 userHR.setDailyHR(dailyHR);
                 userHR.setUsername(user.getUsername());
-
-                //update views
-                //hr_current.setText(userHR.getCurrentHR());
             }
         }).start();
     }
