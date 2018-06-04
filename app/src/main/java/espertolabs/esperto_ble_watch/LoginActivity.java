@@ -18,10 +18,20 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+import com.amazonaws.AmazonWebServiceRequest;
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.DefaultRequest;
+import com.amazonaws.Request;
+import com.amazonaws.auth.AWS4Signer;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.CognitoCachingCredentialsProvider;
+import com.amazonaws.http.HttpMethodName;
+import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.mobile.client.AWSMobileClient;
 
 //all cognito imports here
+import com.amazonaws.mobileconnectors.apigateway.ApiClientFactory;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoDevice;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUser;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserAttributes;
@@ -51,15 +61,21 @@ import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.facebook.FacebookSdk;
 import com.facebook.appevents.AppEventsLogger;
+import com.ghedeon.AwsInterceptor;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import okhttp3.OkHttpClient;
 
 import java.lang.reflect.Type;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -87,7 +103,7 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-        Button fbRedirect= (Button)findViewById(R.id.facebookLogin);
+        Button fbRedirect = (Button) findViewById(R.id.facebookLogin);
         Button googleRedirect = (Button) findViewById(R.id.googleLogin);
         Button customLogin = (Button) findViewById(R.id.customLogin);
         usernameView = (TextView) findViewById(R.id.username); //accept custom username
@@ -107,7 +123,34 @@ public class LoginActivity extends AppCompatActivity {
         */
         userPool = new CognitoUserPool(getApplicationContext(), getString(R.string.cognito_userpool_id), getString(R.string.cognito_client_id), getString(R.string.cognito_client_secret), Regions.fromName(getString(R.string.cognito_region)));
 
+        //send heart rate request - just for prototyping for now
+        BasicAWSCredentials credentials = new BasicAWSCredentials("AKIAI5TPBKZTQJBU523Q", "TTRcNw6ch3OD0wIwD+rRWQAY0pudufuPIImwqUoA");
+        AWSCredentialsProvider credentialsProvider = new StaticCredentialsProvider(credentials);
+
+        AwsInterceptor awsInterceptor = new AwsInterceptor(credentialsProvider, "execute-api", "us-east-1");
+        final OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(awsInterceptor)
+                .build();
+
+        new Thread(new Runnable(){
+            @Override
+            public void run() {
+                try {
+                    okhttp3.Request request2 = new okhttp3.Request.Builder()
+                            .url("https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/heartRate/47c2f191-92b0-4a69-9050-ece261e82299/")
+                            .addHeader("Content-Type", "application/x-www-form-urlencoded")
+                            .build();
+                    okhttp3.Response response = null;
+                    response = client.newCall(request2).execute();
+                    String body = response.body().string();
+                    Log.d("resp_body", "response " + body);
+                } catch (Exception e) {
+                    Log.d("resp_error", "error " + e);
+                }
+            }
+        }).start();
     }
+
 
     @Override
     protected void onResume(){

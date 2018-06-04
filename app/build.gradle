@@ -47,6 +47,7 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-core:1.10.19'
     androidTestCompile 'com.android.support.test.espresso:espresso-core:3.0.1'
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile fileTree(include: ['*.jar'], dir: 'app/libs')
+    compile 'com.amazonaws:aws-android-sdk-apigateway-core:2.6.19'
+    debugCompile 'com.ghedeon:aws-interceptor:0.6'
+    compile 'com.squareup.okhttp3:okhttp:3.0.1'
 }
