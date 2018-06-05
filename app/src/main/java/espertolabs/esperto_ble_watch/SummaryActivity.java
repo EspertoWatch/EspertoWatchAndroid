@@ -89,6 +89,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     private boolean detailedHeart = false;
     private boolean detailedStep = false;
     TextView messageUser;
+    TextView bleConnection;
 
     //Graph UI objects
     LineChart heartChart;
@@ -106,14 +107,15 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     summaryDisplay = true;
                     detailedHeart = false;
                     detailedStep = false;
-                   // TODO updateUI("Summary
-                    // ");
+                    mBLEService.writeRXCharacteristic("Summary".getBytes());
+                   // TODO updateUI("Summary");
                     return true;
                 case R.id.navigation_heart:
                     displayHeart();
                     detailedHeart = true;
                     summaryDisplay = false;
                     detailedStep = false;
+                    mBLEService.writeRXCharacteristic("Heart Rate".getBytes());
                     // TODO updateUI("Heart Rate");
                     return true;
                 case R.id.navigation_steps:
@@ -121,6 +123,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     detailedHeart = false;
                     detailedStep = true;
                     summaryDisplay = false;
+                    mBLEService.writeRXCharacteristic("Steps".getBytes());
                     // TODO updateUI("Step Count");
                     return true;
             }
@@ -137,6 +140,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         Drawable drawable = ContextCompat.getDrawable(getApplicationContext(),R.drawable.settings_ic);
 
         messageUser = (TextView) findViewById(R.id.messageUser);
+        bleConnection = (TextView) findViewById(R.id.bleConnection);
         heartChart = (LineChart)findViewById(R.id.heartChart); //used to display daily HR
         stepChart = (BarChart) findViewById(R.id.stepChart); //used to display daily stepCount
         flipper = (ViewFlipper)findViewById(R.id.vf);
@@ -249,6 +253,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     private List<Entry> retrieveHeartRateData(){
        //Retrieve data here
         List<Entry> entries = new ArrayList<Entry>();
+        // TODO: change from Set since it does not allow for duplicate entries
         Set<Integer> dailyHR = userHR.getDailyHR();
         int timeCounter = 8; //start at 8am TODO:: add actual times once I have the esperto watch (24 h clock)
         for(Integer i: dailyHR){
@@ -262,7 +267,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     //TODO:: adjust color of graph if goal achieved
     private void displaySteps(){
         flipper.setDisplayedChild(2);
-        if(!user.getUsername().equals("mmacmahon")){return;}
+//        if(!user.getUsername().equals("mmacmahon")){return;}
         BarDataSet dataSet = retrieveStepData();
         ArrayList<IBarDataSet> dataSets = new ArrayList<IBarDataSet>();
         dataSet.setColors(getResources().getColor(R.color.navbar));
@@ -295,15 +300,16 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         ArrayList<BarEntry> yVals = new ArrayList<BarEntry>();
         float counter = 0;
         float timeCounter = 8; //start at 8am TODO:: add actual times once I have the esperto watch (24 h clock)
+        // TODO: change from Set since it does not allow for duplicate entries
         Set<Integer> dailySteps = userSteps.getDailySteps();
         for(Integer i:dailySteps){
             // turn your data into Entry objects
             int hours = (int)timeCounter;
             int min = (int)(timeCounter - hours) *60;
-            //String time = String.format("%d:%02d",hours, min).toString();
+            String time = String.format("%d:%02d",hours, min).toString();
 
             yVals.add(new BarEntry(counter, i)); //wrap each data point into Entry objects
-            //xVals.add(time);
+            xVals.add(time);
             timeCounter = timeCounter + (float)0.5;
             counter++;
         }
@@ -371,6 +377,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 Log.i("Update", "Device connected");
                 mConnected = true;
                 invalidateOptionsMenu();
+                bleConnection.setText("Watch connected");
+                bleConnection.setTextColor(Color.GREEN);
             } else if (BLEService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 Log.i("Update", "Device disconnected");
                 mConnected = false;
@@ -414,9 +422,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 byte[] rcv = intent.getByteArrayExtra(BLEService.EXTRA_DATA);
                 Log.i("DATA","AVAIL");
                 Log.i("DATA RCV'D",Arrays.toString(rcv));
-                String message = "You sent: ";
-                byte[] value = message.getBytes();
-                mBLEService.writeRXCharacteristic(value);
+                bleConnection.setText(new String(rcv));
                 mBLEService.writeRXCharacteristic(rcv);
                 //TODO:: uncomment code with functional BLE module
 
@@ -441,19 +447,20 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     @Override
     protected void onPause(){
         super.onPause();
-        unregisterReceiver(mGattUpdateReceiver);
+//        unregisterReceiver(mGattUpdateReceiver);
     }
 
     @Override
     protected void onDestroy(){
         super.onDestroy();
-
+        unregisterReceiver(mGattUpdateReceiver);
+        unbindService(mConnection);
     }
     @Override
     protected void onResume(){
         super.onResume();
-        registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
-        if(mBLEService != null) mBLEService.connect(user.getDeviceAddress());
+//        registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+//        if(mBLEService != null) mBLEService.connect(user.getDeviceAddress());
     }
     //filter intents
     private static IntentFilter makeGattUpdateIntentFilter() {
@@ -493,7 +500,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 Looper.prepare();
 
                 //insert some fake vals for now
-                Set<Integer> dailyHR = new HashSet<>(Arrays.asList(80, 90, 100, 90, 80));
+                Set<Integer> dailyHR = new HashSet<>(Arrays.asList(70, 60, 80, 100, 130, 61, 51, 62, 84, 102, 138, 65, 52, 60, 85, 111, 139, 62, 51, 67, 84, 120, 131, 68, 54));
                 Integer currentHR = 85;
                 userHR.setCurrentHR(currentHR);
                 userHR.setDailyHR(dailyHR);
@@ -546,7 +553,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 Looper.prepare();
 
                 //insert some fake vals for now
-                Set<Integer> dailySteps = new HashSet<>(Arrays.asList(8000, 9000, 10000, 9000, 8000));
+                Set<Integer> dailySteps = new HashSet<>(Arrays.asList(8000, 9000, 10000, 9000, 8200, 9005, 10500, 9580, 8100, 9600, 10250, 9890, 8012));
                 Integer currentSteps = 8500;
                 userSteps.setCurrentSteps(currentSteps);
                 userSteps.setDailySteps(dailySteps);
