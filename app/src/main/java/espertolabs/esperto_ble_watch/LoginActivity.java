@@ -1,8 +1,10 @@
 package espertolabs.esperto_ble_watch;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -10,6 +12,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.telephony.TelephonyManager;
 import android.util.JsonReader;
 import android.util.Log;
 import android.view.View;
@@ -106,7 +109,6 @@ public class LoginActivity extends AppCompatActivity {
                 .build();
         */
         userPool = new CognitoUserPool(getApplicationContext(), getResources().getString(R.string.cognito_userpool_id), getResources().getString(R.string.cognito_client_id), getResources().getString(R.string.cognito_client_secret), Regions.fromName(getResources().getString(R.string.cognito_region)));
-
     }
 
     @Override
@@ -206,8 +208,6 @@ public class LoginActivity extends AppCompatActivity {
         AlertDialog dialog = builder.create();
         dialog.show();
     }
-
-
 
     public void createAccount(View v){
         //TODO:: send intent to register activity

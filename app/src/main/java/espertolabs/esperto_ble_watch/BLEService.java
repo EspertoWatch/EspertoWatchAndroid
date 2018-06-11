@@ -254,6 +254,10 @@ public class BLEService extends Service {
         RxChar.setValue(value);
         boolean status = mBluetoothGatt.writeCharacteristic(RxChar);
 
+        while (status == false) {
+            status = mBluetoothGatt.writeCharacteristic(RxChar);
+        }
+
         Log.d(TAG, "write TXchar - status=" + status);
     }
 
