@@ -583,6 +583,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         super.onDestroy();
         unregisterReceiver(mGattUpdateReceiver);
         unregisterReceiver(mCallReceiver);
+        unregisterReceiver(mSMSReceiver);
         unbindService(mConnection);
     }
     @Override
