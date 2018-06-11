@@ -1,5 +1,6 @@
 package espertolabs.esperto_ble_watch;
 
+import android.Manifest;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
@@ -9,16 +10,22 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Looper;
+import android.provider.Telephony;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.telephony.PhoneStateListener;
+import android.telephony.SmsMessage;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -51,6 +58,9 @@ import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
 import com.github.mikephil.charting.utils.ColorTemplate;
 import com.github.mikephil.charting.utils.Utils;
+import com.google.android.gms.auth.api.phone.SmsRetriever;
+import com.google.android.gms.common.api.CommonStatusCodes;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.common.data.DataBufferObserver;
 import com.google.common.base.Utf8;
 import com.google.gson.Gson;
@@ -66,7 +76,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
+
 
 //TODO:: pass in internet information to adjust views
 //TODO:: connect to BLE device here
@@ -82,6 +96,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     private boolean mServiceBound;
     private boolean mConnected = false;
     private String dataCharacteristicUUID = "00002a05-0000-1000-8000-00805f9b34fb";
+    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 987;
     private BluetoothGattCharacteristic dataCharacteristic;
     //DynamoDBMapper dynamoDBMapper; //map tables to Java classes
     //AmazonDynamoDBClient dynamoDBClient;
@@ -107,7 +122,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     summaryDisplay = true;
                     detailedHeart = false;
                     detailedStep = false;
-                    mBLEService.writeRXCharacteristic("Summary".getBytes());
                    // TODO updateUI("Summary");
                     return true;
                 case R.id.navigation_heart:
@@ -115,7 +129,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     detailedHeart = true;
                     summaryDisplay = false;
                     detailedStep = false;
-                    mBLEService.writeRXCharacteristic("Heart Rate".getBytes());
                     // TODO updateUI("Heart Rate");
                     return true;
                 case R.id.navigation_steps:
@@ -123,7 +136,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     detailedHeart = false;
                     detailedStep = true;
                     summaryDisplay = false;
-                    mBLEService.writeRXCharacteristic("Steps".getBytes());
                     // TODO updateUI("Step Count");
                     return true;
             }
@@ -160,11 +172,23 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
+        //Check whether BLE is supported
+        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+            Toast.makeText(this, "Bluetooth LE is not supported.", Toast.LENGTH_SHORT).show();
+            finish();
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
+        }
+
         //check if Bluetooth is enabled
         Intent intent = new Intent(this, BLEService.class);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
 
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+        registerReceiver(mCallReceiver, new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED));
+        registerReceiver(mSMSReceiver, new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED));
 
         // Instantiate a AmazonDynamoDBMapperClient
         //Commenting out because we're eventually replacing with ApiGateway!
@@ -186,7 +210,20 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         //retrieve heart rate data
         getHRDB();
         getStepDB();
+    }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_COARSE_LOCATION: {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                } else {
+                    Toast.makeText(this, "Location permissions are required for Bluetooth scanning.", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+            }
+        }
     }
 
     public void greetUser(){
@@ -351,8 +388,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                                        IBinder service) {
             // We've bound to LocalService, cast the IBinder and get LocalService instance
             BLEService.LocalBinder binder = (BLEService.LocalBinder) service;
-            mServiceBound = true;
             mBLEService = binder.getService();
+            mServiceBound = true;
             if (mBLEService.initialize()) {
                 mBLEService.connect(user.getDeviceAddress());
             }
@@ -418,12 +455,35 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 // Show all the supported services and characteristics on the
                 // user interface.
                 //displayGattServices(mBluetoothLeService.getSupportedGattServices());
+
+                // Send updated time and date every time summary is opened
+                Date now = new Date();
+
+                SimpleDateFormat ft = new SimpleDateFormat ("hh:mm:ssa");
+                String timeString = ft.format(now);
+                byte[] send = timeString.getBytes(StandardCharsets.UTF_8);
+                mBLEService.writeRXCharacteristic(send);
+
+                ft = new SimpleDateFormat ("dd/MM/YYYY");
+                timeString = ft.format(now);
+                timeString = "D" + timeString;
+                send = timeString.getBytes(StandardCharsets.UTF_8);
+                mBLEService.writeRXCharacteristic(send);
             } else if (BLEService.ACTION_DATA_AVAILABLE.equals(action)) {
                 byte[] rcv = intent.getByteArrayExtra(BLEService.EXTRA_DATA);
                 Log.i("DATA","AVAIL");
                 Log.i("DATA RCV'D",Arrays.toString(rcv));
-                bleConnection.setText(new String(rcv));
-                mBLEService.writeRXCharacteristic(rcv);
+                int heartRate = rcv[0];
+                int stepCount = ( ( rcv[1] & 0xFF ) << 8 ) | ( rcv[0] );
+
+                Log.i("Heart rate", Integer.toString(heartRate));
+                Log.i("Step count", Integer.toString(stepCount));
+
+                storeHeartRate(heartRate);
+                storeStepCount(stepCount);
+
+//                bleConnection.setText(new String(rcv));
+
                 //TODO:: uncomment code with functional BLE module
 
                 //Log.i("data",intent.getResources().getStringExtra(BLEService.EXTRA_DATA));
@@ -444,6 +504,74 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         }
     };
 
+    private final BroadcastReceiver mCallReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String state = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
+            if (state == null) {
+
+                //Outgoing call
+                String number = intent.getStringExtra(Intent.EXTRA_PHONE_NUMBER);
+                Log.i("tag", "Outgoing number : " + number);
+
+            } else if (state.equals(TelephonyManager.EXTRA_STATE_OFFHOOK)) {
+
+                Log.i("tag", "EXTRA_STATE_OFFHOOK");
+
+            } else if (state.equals(TelephonyManager.EXTRA_STATE_IDLE)) {
+
+                Log.i("tag", "EXTRA_STATE_IDLE");
+
+            } else if (state.equals(TelephonyManager.EXTRA_STATE_RINGING)) {
+
+                //Incoming call
+                String number = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER);
+                String callNumber = "C" + number;
+                byte[] send = callNumber.getBytes(StandardCharsets.UTF_8);
+                mBLEService.writeRXCharacteristic(send);
+
+            } else
+                Log.i("tag", "none");
+        }
+    };
+
+    private final BroadcastReceiver mSMSReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String TAG = "Summary";
+            final String tag = TAG + ".onReceive";
+            Bundle bundle = intent.getExtras();
+            if (bundle == null) {
+                Log.w(tag, "BroadcastReceiver failed, no intent data to process.");
+                return;
+            }
+            if (intent.getAction().equals(Telephony.Sms.Intents.SMS_RECEIVED_ACTION)) {
+                Log.d(tag, "SMS_RECEIVED");
+
+                String smsOriginatingAddress;
+
+                // You have to CHOOSE which code snippet to use NEW (KitKat+), or legacy
+                // Please comment out the for{} you don't want to use.
+
+                // API level 19 (KitKat 4.4) getMessagesFromIntent
+                for (SmsMessage message : Telephony.Sms.Intents.
+                        getMessagesFromIntent(intent)) {
+                    Log.d(tag, "KitKat or newer");
+                    if (message == null) {
+                        Log.e(tag, "SMS message is null -- ABORT");
+                        break;
+                    }
+                    smsOriginatingAddress = message.getDisplayOriginatingAddress();
+                    Log.d("originating address", smsOriginatingAddress);
+                    String msgNumber = "M" + smsOriginatingAddress;
+                    byte[] send = msgNumber.getBytes(StandardCharsets.UTF_8);
+                    mBLEService.writeRXCharacteristic(send);
+
+                }
+            }
+        }
+    };
+
     @Override
     protected void onPause(){
         super.onPause();
@@ -454,6 +582,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     protected void onDestroy(){
         super.onDestroy();
         unregisterReceiver(mGattUpdateReceiver);
+        unregisterReceiver(mCallReceiver);
         unbindService(mConnection);
     }
     @Override

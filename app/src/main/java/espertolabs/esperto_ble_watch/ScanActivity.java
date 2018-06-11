@@ -152,9 +152,8 @@ public class ScanActivity extends AppCompatActivity implements Callback {
             mBLEService = binder.getService();
             mServiceBound = true;
             //initialize BLE
-            boolean success = mBLEService.initialize();
-            //start scanning
-            if (success) {
+            if (mBLEService.initialize()) {
+                //start scanning
                 mBLEService.scanForDevices(true, deviceButton, deviceText);
             }
         }
