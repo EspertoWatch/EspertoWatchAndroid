@@ -1,9 +1,11 @@
 package espertolabs.esperto_ble_watch;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -11,6 +13,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.telephony.TelephonyManager;
 import android.util.JsonReader;
 import android.util.Log;
 import android.view.View;
@@ -149,7 +152,7 @@ public class LoginActivity extends AppCompatActivity {
                     Log.d("built_user", user.getName());
 
                     Intent displaySummary = new Intent(getApplicationContext(), SummaryActivity.class);
-                    displaySummary.putExtra("deviceAddress", "defaultAddress");
+                    displaySummary.putExtra("deviceAddress", "D4:49:8C:44:48:82");
                     displaySummary.putExtra("user_obj", user);
                     startActivity(displaySummary);
                 }
@@ -208,10 +211,10 @@ public class LoginActivity extends AppCompatActivity {
     //alert user of failed login attempt
     public void alertAuthenticationFailure(){
         AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert);
-        builder.setMessage(R.string.try_again)
-                .setTitle(R.string.error_message);
+        builder.setMessage(getResources().getString(R.string.try_again))
+                .setTitle(getResources().getString(R.string.error_message));
 
-        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+        builder.setPositiveButton(getResources().getString(R.string.ok), new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
                 // User clicked OK button
                 dialog.dismiss();
@@ -220,8 +223,6 @@ public class LoginActivity extends AppCompatActivity {
         AlertDialog dialog = builder.create();
         dialog.show();
     }
-
-
 
     public void createAccount(View v){
         //TODO:: send intent to register activity

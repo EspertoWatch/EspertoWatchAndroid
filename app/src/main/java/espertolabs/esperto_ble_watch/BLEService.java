@@ -17,23 +17,14 @@ import android.bluetooth.le.ScanResult;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
-import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.ParcelUuid;
-import android.provider.ContactsContract;
 import android.util.Log;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.w3c.dom.Text;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.List;
-import java.util.Timer;
 import java.util.UUID;
 
 ///service to handle connection to BLE device, and maintain that connection across desired activities
@@ -80,6 +71,11 @@ public class BLEService extends Service {
  /*
     public final static UUID UUID_HEART_RATE_MEASUREMENT =
             UUID.fromString(SampleGattAttributes.HEART_RATE_MEASUREMENT);*/
+
+    public static final UUID CCCD = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+    public static final UUID RX_SERVICE_UUID = UUID.fromString("6e400001-b5a3-f393-e0a9-e50e24dcca9e");
+    public static final UUID RX_CHAR_UUID = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e");
+    public static final UUID TX_CHAR_UUID = UUID.fromString("6e400003-b5a3-f393-e0a9-e50e24dcca9e");
 
     // Various callback methods defined by the BLE API.
     private final BluetoothGattCallback mGattCallback =
@@ -141,25 +137,27 @@ public class BLEService extends Service {
         final Intent intent = new Intent(action);
         final byte[] data = characteristic.getValue();
 
-        try{
-            String str = new String(data, "UTF-8"); // for UTF-8 encoding
-            Log.i("test",str);
-        }
-        catch(Exception e){
-            Log.w("Failed","Wrong encoding");
-        }
+        intent.putExtra(EXTRA_DATA, data);
 
-
-
-        if (data != null && data.length > 0) {
-            final StringBuilder stringBuilder = new StringBuilder(data.length);
-            for(byte byteChar : data)
-                stringBuilder.append(String.format("%02X ", byteChar));
-                intent.putExtra(EXTRA_DATA, new String(data) + "\n" +
-                    stringBuilder.toString());
-        }
-        if(data == null) intent.putExtra(EXTRA_DATA, "null");
-        intent.putExtra("characteristic", characteristic.getUuid().toString());
+//        try{
+//            String str = new String(data, "UTF-8"); // for UTF-8 encoding
+//            Log.i("test",str);
+//        }
+//        catch(Exception e){
+//            Log.w("Failed","Wrong encoding");
+//        }
+//
+//
+//
+//        if (data != null && data.length > 0) {
+//            final StringBuilder stringBuilder = new StringBuilder(data.length);
+//            for(byte byteChar : data)
+//                stringBuilder.append(String.format("%02X ", byteChar));
+//                intent.putExtra(EXTRA_DATA, new String(data) + "\n" +
+//                    stringBuilder.toString());
+//        }
+//        if(data == null) intent.putExtra(EXTRA_DATA, "null");
+//        intent.putExtra("characteristic", characteristic.getUuid().toString());
 
         sendBroadcast(intent);
     }
@@ -230,14 +228,41 @@ public class BLEService extends Service {
             return;
         }
         mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
-
     }
+
     public void readCharacteristic(BluetoothGattCharacteristic characteristic) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
             Log.w(TAG, "BluetoothAdapter not initialized");
             return;
         }
         mBluetoothGatt.readCharacteristic(characteristic);
+    }
+
+    public void writeRXCharacteristic(byte[] value)
+    {
+        BluetoothGattService RxService = mBluetoothGatt.getService(RX_SERVICE_UUID);
+        BluetoothGattCharacteristic RxChar = RxService.getCharacteristic(RX_CHAR_UUID);
+        RxChar.setValue(value);
+        boolean status = mBluetoothGatt.writeCharacteristic(RxChar);
+
+        while (status == false) {
+            status = mBluetoothGatt.writeCharacteristic(RxChar);
+        }
+
+        Log.d(TAG, "write TXchar - status=" + status);
+    }
+
+    public void enableTXNotification()
+    {
+        BluetoothGattService RxService = mBluetoothGatt.getService(RX_SERVICE_UUID);
+        BluetoothGattCharacteristic TxChar = RxService.getCharacteristic(TX_CHAR_UUID);
+
+        mBluetoothGatt.setCharacteristicNotification(TxChar,true);
+
+        BluetoothGattDescriptor descriptor = TxChar.getDescriptor(CCCD);
+        descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+        mBluetoothGatt.writeDescriptor(descriptor);
+
     }
 
     /**
@@ -274,7 +299,6 @@ public class BLEService extends Service {
         if (enable) {
             deviceButton = button;
             deviceText = text;
-            Log.d("AM I still scanning?", "am i?");
             mHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -305,16 +329,20 @@ public class BLEService extends Service {
                     name = record.getDeviceName();
                 }
 
-                if(isEspertoWatch(name)){
-                    ImageButton device = deviceButton;
-                    TextView txt = deviceText;
-                    BLEService caller = new BLEService();
-                    Callback callBack = new ScanActivity();
-                    //because of the interface, the type is Callback even thought the new instance is the CallBackImpl class. This alows to pass different types of classes that have the implementation of CallBack interface
-                    caller.register(callBack, result.getDevice(),deviceButton,deviceText);
+                if (name == null) {
+                    Log.i("onScanResult", "scanned device name null");
+                } else {
+                    if(isEspertoWatch(name)){
+                        ImageButton device = deviceButton;
+                        TextView txt = deviceText;
+                        BLEService caller = new BLEService();
+                        Callback callBack = new ScanActivity();
+                        //because of the interface, the type is Callback even thought the new instance is the CallBackImpl class. This alows to pass different types of classes that have the implementation of CallBack interface
+                        caller.register(callBack, result.getDevice(), device, txt);
 
-                    Log.d("DEBUG:", "Address:" + result.getDevice().getAddress());
+                        Log.d("DEBUG:", "Address:" + result.getDevice().getAddress());
 
+                    }
                 }
             }
         };
@@ -323,7 +351,8 @@ public class BLEService extends Service {
     public boolean isEspertoWatch(String name)
     {
         //TODO::update with new BLE chip
-        if(name.equals(Integer.toString(R.string.esperto_device_name))) return true;
+        String watch_name = getString(R.string.esperto_device_name);
+        if(name.equals(watch_name)) return true;
         else return false;
     }
 

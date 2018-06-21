@@ -27,6 +27,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.Manifest.permission;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.mobile.client.AWSMobileClient;
@@ -49,6 +50,9 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     ImageButton deviceButton;
     TextView deviceText;
     String[] userInfo;
+    String watch_name = "Esperto";
+    String device_addr;
+    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 987;
 
     //TODO:: move
     // Declare a DynamoDBMapper object
@@ -58,9 +62,9 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.scan_devices);
-        setSupportActionBar((Toolbar) findViewById(R.id.device_toolbar));
-        deviceButton = (ImageButton)findViewById(R.id.watchDevice);
-        deviceText= (TextView)findViewById(R.id.deviceName);
+        watch_name = getString(R.string.esperto_device_name);
+        deviceButton = findViewById(R.id.watchDevice);
+        deviceText = findViewById(R.id.deviceName);
 
         //grab intent info
         Intent registerIntent = getIntent();
@@ -73,10 +77,13 @@ public class ScanActivity extends AppCompatActivity implements Callback {
 
         //Check whether BLE is supported
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            Toast.makeText(this, "Bluetooth is not supported.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Bluetooth LE is not supported.", Toast.LENGTH_SHORT).show();
             finish();
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            requestPermissions(new String[]{permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
+        }
 
         // Instantiate a AmazonDynamoDBMapperClient
         dynamoDBClient = Region.getRegion(Regions.US_EAST_1)
@@ -84,7 +91,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
                         AWSMobileClient.getInstance().getCredentialsProvider(),
                         new ClientConfiguration()
                 );
-
 
         this.dynamoDBMapper = DynamoDBMapper.builder()
                 .dynamoDBClient(dynamoDBClient)
@@ -94,7 +100,20 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         //check if Bluetooth is enabled
         Intent intent = new Intent(this, BLEService.class);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+    }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_COARSE_LOCATION: {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                } else {
+                    Toast.makeText(this, "Location permissions are required for Bluetooth scanning.", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+            }
+        }
     }
 
     /**
@@ -111,15 +130,16 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         //newUser.setFirstName(userData[0]);
         //newUser.setLastName(userData[1]);
         //make asynchronous method call to synchronous DynamoDB
-        Runnable runnable = new Runnable() {
-            public void run() {
-                //add account to database
-                dynamoDBMapper.save(newUser);
-                //move to login screen
-            }
-        };
-        Thread mythread = new Thread(runnable);
-        mythread.start();
+        // TODO: change to API gateway
+//        Runnable runnable = new Runnable() {
+//            public void run() {
+//                //add account to database
+//                dynamoDBMapper.save(newUser);
+//                //move to login screen
+//            }
+//        };
+//        Thread mythread = new Thread(runnable);
+//        mythread.start();
     }
 
 
@@ -132,9 +152,10 @@ public class ScanActivity extends AppCompatActivity implements Callback {
             mBLEService = binder.getService();
             mServiceBound = true;
             //initialize BLE
-            boolean success = mBLEService.initialize();
-            //start scanning
-            mBLEService.scanForDevices(true, deviceButton, deviceText);
+            if (mBLEService.initialize()) {
+                //start scanning
+                mBLEService.scanForDevices(true, deviceButton, deviceText);
+            }
         }
 
         @Override
@@ -189,7 +210,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     @Override
     protected void onPause() {
         super.onPause();
-        mBLEService.scanForDevices(false, null, null);
+//        mBLEService.scanForDevices(false, null, null);
         //unbind service
         // mBLEService.unbindService(mConnection);
     }
@@ -198,6 +219,9 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (mConnection!= null) {
+            unbindService(mConnection);
+        }
         mBLEService.scanForDevices(false, null, null);
         mBLEService = null;
 //        mBLEService.unbindService(mConnection);
@@ -209,15 +233,15 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     public void displayDevice(BluetoothDevice device, ImageButton btn, TextView txt){
         //display device address
         String name = device.getName();
+        device_addr = device.getAddress();
         if(name == null) name = "unknown";
-        else name = name.toString();
 
         //TODO:: modify for updated Esperto watch
         //update UI interface
-        if(name.equals(R.string.esperto_device_name)){
+        if(name.equals(watch_name)){
             //display icon
             btn.setVisibility(View.VISIBLE);
-            txt.setText(device.getAddress());
+            txt.setText("Esperto watch found at:\n" + device_addr);
             txt.setVisibility(View.VISIBLE);
         }
     }
@@ -225,7 +249,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     //expand to multiple users
     public void selectDevice(View v){
         //add to user account and send intent to login activity
-        createAccounts(userInfo, deviceText.getText().toString()); //create user account with associated device address
+        createAccounts(userInfo, device_addr); //create user account with associated device address
 
         //return to login page
         Intent loginUser = new Intent(v.getContext(), LoginActivity.class);

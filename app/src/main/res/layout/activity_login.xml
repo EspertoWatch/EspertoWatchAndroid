@@ -1,94 +1,108 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:id="@+id/relativeLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:background="@color/colorWhite">
 
     <EditText
         android:id="@+id/username"
-        android:layout_width="294dp"
+        android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/logoImageView"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="33dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="32dp"
         android:ems="10"
         android:hint="@string/username"
         android:inputType="textPersonName"
         android:textColor="@color/colorPrimary"
-        android:textColorHint="#d3d3d3" />
+        android:textColorHint="#d3d3d3"
+        app:layout_constraintEnd_toEndOf="@+id/logoImageView"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/logoImageView"
+        app:layout_constraintTop_toBottomOf="@+id/logoImageView" />
 
     <EditText
         android:id="@+id/password"
-        android:layout_width="292dp"
+        android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/username"
-        android:layout_centerHorizontal="true"
+        android:layout_marginTop="8dp"
         android:ems="10"
         android:hint="@string/prompt_password"
         android:inputType="textPassword"
         android:textColor="@color/colorPrimary"
-        android:textColorHint="#d3d3d3" />
+        android:textColorHint="#d3d3d3"
+        app:layout_constraintEnd_toEndOf="@+id/username"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/username"
+        app:layout_constraintTop_toBottomOf="@+id/username" />
 
 
     <ImageView
         android:id="@+id/logoImageView"
-        android:layout_width="169dp"
-        android:layout_height="105dp"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="60dp"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_marginTop="64dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/logo" />
 
     <Button
         android:id="@+id/createAccountButton"
         style="@style/Widget.AppCompat.Button.Borderless"
-        android:layout_width="137dp"
-        android:layout_height="61dp"
-        android:layout_below="@+id/facebookLogin"
-        android:layout_centerHorizontal="true"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:background="@color/colorWhite"
         android:onClick="createAccount"
         android:text="Create an account"
         android:textColor="@color/com_facebook_blue"
-        android:textSize="12sp"
+        android:textSize="14sp"
         android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@+id/googleLogin"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/googleLogin"
+        app:layout_constraintTop_toBottomOf="@+id/googleLogin"
         tools:text="Create an account" />
 
     <Button
         android:id="@+id/customLogin"
-        android:layout_width="291dp"
-        android:layout_height="61dp"
-        android:layout_alignEnd="@+id/password"
-        android:layout_alignStart="@+id/password"
-        android:layout_below="@+id/username"
-        android:layout_marginEnd="1dp"
-        android:layout_marginTop="53dp"
+        android:layout_width="250dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="32dp"
         android:backgroundTint="@color/navbar"
         android:onClick="checkCredentials"
         android:text="@string/action_login"
         android:textColor="@color/colorWhite"
         android:textSize="18sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@+id/password"
+        app:layout_constraintStart_toStartOf="@+id/password"
+        app:layout_constraintTop_toBottomOf="@+id/password" />
 
     <Button
         android:id="@+id/googleLogin"
-        android:layout_width="296dp"
-        android:layout_height="50dp"
-        android:layout_below="@+id/customLogin"
-        android:layout_centerHorizontal="true"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:background="@drawable/google"
+        app:layout_constraintDimensionRatio="w,1:4.9"
+        app:layout_constraintEnd_toEndOf="@+id/facebookLogin"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/facebookLogin"
+        app:layout_constraintTop_toBottomOf="@+id/facebookLogin"
         tools:ignore="ContentDescription" />
 
     <Button
         android:id="@+id/facebookLogin"
-        android:layout_width="285dp"
-        android:layout_height="51dp"
-        android:layout_alignEnd="@+id/googleLogin"
-        android:layout_alignStart="@+id/googleLogin"
-        android:layout_below="@+id/googleLogin"
-        android:layout_marginEnd="7dp"
-        android:layout_marginStart="4dp"
-        android:background="@drawable/facebook" />
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@drawable/facebook"
+        app:layout_constraintDimensionRatio="4:1"
+        app:layout_constraintEnd_toEndOf="@+id/customLogin"
+        app:layout_constraintStart_toStartOf="@+id/customLogin"
+        app:layout_constraintTop_toBottomOf="@+id/customLogin" />
 
-</RelativeLayout>
+</android.support.constraint.ConstraintLayout>
