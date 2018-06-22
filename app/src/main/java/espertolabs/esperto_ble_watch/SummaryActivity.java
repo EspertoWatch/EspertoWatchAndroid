@@ -15,6 +15,7 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Telephony;
@@ -421,9 +422,21 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 mConnected = false;
                 Toast.makeText(getApplicationContext(), "Esperto Watch disconnected. ", Toast.LENGTH_SHORT).show();
                 invalidateOptionsMenu();
-                finish();
-                //TODO::attempt to reconnect
-                //else close application and display toast message
+
+                Date now = new Date();
+
+                SimpleDateFormat ft = new SimpleDateFormat ("hh:mm:ss a dd/MM/YYYY");
+                String timeString = ft.format(now);
+
+                bleConnection.setText("Watch disconnected\nLast connected at " + timeString);
+                bleConnection.setTextColor(Color.RED);
+                final Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        mBLEService.connect(user.getDeviceAddress());
+                    }
+                }, 5000);
                 //clearUI();
             } else if (BLEService.
                     ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
