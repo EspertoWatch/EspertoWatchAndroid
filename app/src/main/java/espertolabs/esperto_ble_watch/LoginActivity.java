@@ -96,7 +96,7 @@ public class LoginActivity extends AppCompatActivity {
     TextView usernameView;
     TextView passwordView;
     CognitoUserPool userPool;
-    final ApiGatewayHandler handler = new ApiGatewayHandler();
+    private ApiGatewayHandler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,7 +139,10 @@ public class LoginActivity extends AppCompatActivity {
             SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("userId", Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sharedPref.edit();
             editor.putString("USER_ID", userId);
+            editor.putString("USER_TOKEN", userSession.getIdToken().getJWTToken());
             editor.commit();
+
+            handler = new ApiGatewayHandler(getApplicationContext());
 
             new Thread(new Runnable(){
                 @Override

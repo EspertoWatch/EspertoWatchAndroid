@@ -117,7 +117,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     TextView steps_current;
 
     //instantiate api gateway handler
-    final ApiGatewayHandler handler = new ApiGatewayHandler();
+    final ApiGatewayHandler handler = new ApiGatewayHandler(getApplicationContext());
     String userId;
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
