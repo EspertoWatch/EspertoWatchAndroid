@@ -117,7 +117,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     TextView steps_current;
 
     //instantiate api gateway handler
-    final ApiGatewayHandler handler = new ApiGatewayHandler(getApplicationContext());
+    final ApiGatewayHandler handler = new ApiGatewayHandler();
     String userId;
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
@@ -193,8 +193,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("userId", Context.MODE_PRIVATE);
         userId = sharedPref.getString("USER_ID", "");
 
-        Log.d("get_u_id", userId);
-
         //retrieve intent
         Intent userIntent = getIntent();
         user = (UserAccount) getIntent().getSerializableExtra("user_obj");
@@ -228,12 +226,17 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     private void displaySummary(){
         flipper.setDisplayedChild(3);
         //using default goals for now
+
+        //NOT SURE WHY WE ARE SETTING STUFF TO ZERO IF WE HAVE NO LT DATA
+        /*
         if(userHR.getUsername() == null || userSteps.getUsername() == null){
             Log.i("Fail", "user has no long term data");
             hr_current.setText("0");
             steps_current.setText("0");
             return; //just displaying random stand in data if not long term user
         }
+        */
+
         hr_current.setText(Integer.toString(userHR.getCurrentHR()));
         steps_current.setText(Integer.toString(userSteps.getCurrentSteps()));
     }

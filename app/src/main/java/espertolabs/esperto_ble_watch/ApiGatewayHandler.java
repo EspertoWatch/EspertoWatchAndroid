@@ -11,29 +11,30 @@ import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.ghedeon.AwsInterceptor;
 
+import android.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
+import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 
 public class ApiGatewayHandler {
-    //send heart rate request - just for prototyping for now
-    //BasicAWSCredentials credentials = new BasicAWSCredentials("AKIAI5TPBKZTQJBU523Q", "TTRcNw6ch3OD0wIwD+rRWQAY0pudufuPIImwqUoA");
-    //AWSCredentialsProvider credentialsProvider = new StaticCredentialsProvider(credentials);
-    private CognitoCachingCredentialsProvider credentialsProvider;
-    private AwsInterceptor awsInterceptor;
+    String encoded_access_key = "QUtJQUpSR08yUVlHRkNJUERSQlENCg==";
+    String encoded_secret_key = "Q2tUNG5VcXZWc2ZGOXBLVzBZVDdqeGYxcE5ETXJlSmxaaU9FcnA1bw0K";
 
-    ApiGatewayHandler (Context appContext){
-        credentialsProvider = new CognitoCachingCredentialsProvider(appContext, "us-east-1:8393f422-c4d0-4448-a71f-cddadb939273", Regions.fromName("us-east-1"));
-        Map<String, String> logins = new HashMap<String, String>();
-        //todo: cognitoIdToken shouldn't be in constructor, but rather stored locally when user logs in
-        //todo: and retrieved here
-        SharedPreferences sharedPref = appContext.getSharedPreferences("userId", Context.MODE_PRIVATE);
-        String cognitoIdToken = sharedPref.getString("USER_TOKEN", "");
-        logins.put("cognito-idp.us-east-1.amazonaws.com/us-east-1_RL95jbC5g", cognitoIdToken);
-        credentialsProvider.setLogins(logins);
-        awsInterceptor = new AwsInterceptor(credentialsProvider, "execute-api", "us-east-1");
-    }
+    byte[] decoded_access_key = Base64.decode(encoded_access_key, Base64.DEFAULT);
+    String access_key = new String(decoded_access_key);
+
+    byte[] decoded_secret_key = Base64.decode(encoded_secret_key, Base64.DEFAULT);
+    String secret_key = new String(decoded_secret_key);
+
+    BasicAWSCredentials credentials = new BasicAWSCredentials(access_key, secret_key);
+    AWSCredentialsProvider credentialsProvider = new StaticCredentialsProvider(credentials);
+
+    AwsInterceptor awsInterceptor = new AwsInterceptor(credentialsProvider, "execute-api", "us-east-1");
+    final OkHttpClient client = new OkHttpClient.Builder()
+            .addInterceptor(awsInterceptor)
+            .build();
 
     public OkHttpClient getHttpClient(){
         final OkHttpClient client = new OkHttpClient.Builder()
@@ -83,6 +84,7 @@ public class ApiGatewayHandler {
     public String getUserInfo(String userId){
         final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/userInfo/" + userId;
         String body = "";
+
         try {
             okhttp3.Request request2 = new okhttp3.Request.Builder()
                     .url(invokeUrl)
@@ -95,6 +97,7 @@ public class ApiGatewayHandler {
         } catch (Exception e) {
             Log.d("UI_resp_error", "error " + e);
         }
+
         return body;
     }
 }

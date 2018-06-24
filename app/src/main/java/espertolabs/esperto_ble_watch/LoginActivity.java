@@ -142,7 +142,7 @@ public class LoginActivity extends AppCompatActivity {
             editor.putString("USER_TOKEN", userSession.getIdToken().getJWTToken());
             editor.commit();
 
-            handler = new ApiGatewayHandler(getApplicationContext());
+            handler = new ApiGatewayHandler();
 
             new Thread(new Runnable(){
                 @Override
@@ -150,14 +150,16 @@ public class LoginActivity extends AppCompatActivity {
                     String response = handler.getUserInfo(userId);
                     Log.d("User_info_response", response);
 
-                    Gson g = new Gson();
-                    UserAccount user = g.fromJson(response, UserAccount.class);
-                    Log.d("built_user", user.getName());
+                    if(response != ""){
+                        Gson g = new Gson();
+                        UserAccount user = g.fromJson(response, UserAccount.class);
+                        Log.d("built_user", user.getName());
 
-                    Intent displaySummary = new Intent(getApplicationContext(), SummaryActivity.class);
-                    displaySummary.putExtra("deviceAddress", "D4:49:8C:44:48:82");
-                    displaySummary.putExtra("user_obj", user);
-                    startActivity(displaySummary);
+                        Intent displaySummary = new Intent(getApplicationContext(), SummaryActivity.class);
+                        displaySummary.putExtra("deviceAddress", "D4:49:8C:44:48:82");
+                        displaySummary.putExtra("user_obj", user);
+                        startActivity(displaySummary);
+                    }
                 }
             }).start();
         }
