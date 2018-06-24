@@ -44,15 +44,16 @@ dependencies {
     implementation 'com.facebook.android:facebook-login:4.33.0'
     implementation 'com.skyfishjy.ripplebackground:library:1.0.1'
     implementation 'com.github.PhilJay:MPAndroidChart:v3.0.3'
-    implementation 'com.microsoft.azure:azure-mobile-android:3.4.0'
-    implementation('com.amazonaws:aws-android-sdk-mobile-client:2.6.+@aar') { transitive = true; }
-    implementation 'com.amazonaws:aws-android-sdk-ddb-mapper:2.6.21'
-    implementation 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.6.8'
-    androidTestImplementation 'org.mockito:mockito-core:1.10.19'
-    androidTestImplementation 'junit:junit:4.12'
-    testImplementation 'junit:junit:4.12'
+    compile 'com.microsoft.azure:azure-mobile-android:3.4.0'
+    compile ('com.amazonaws:aws-android-sdk-mobile-client:2.6.+@aar') { transitive = true; }
+    compile 'com.amazonaws:aws-android-sdk-ddb-mapper:2.6.+'
+    // Required for Cognito
+    compile 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.6.8'
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.mockito:mockito-core:1.10.19'
+    androidTestCompile 'com.android.support.test.espresso:espresso-core:3.0.1'
+    compile 'com.amazonaws:aws-android-sdk-apigateway-core:2.6.19'
+    debugCompile 'com.ghedeon:aws-interceptor:0.6'
+    compile 'com.squareup.okhttp3:okhttp:3.0.1'
     annotationProcessor "android.arch.persistence.room:compiler:1.1.0"
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation fileTree(include: ['*.jar'], dir: 'app/libs')
 }

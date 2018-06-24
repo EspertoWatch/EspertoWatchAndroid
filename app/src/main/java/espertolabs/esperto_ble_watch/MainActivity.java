@@ -14,7 +14,6 @@ import android.widget.Button;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
-import com.amazonaws.mobile.client.AWSMobileClient;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -34,9 +33,6 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
-
-        //Initialize AWS web services
-        AWSMobileClient.getInstance().initialize(this).execute();
 
 
         //TODO::checkk for internet permission problem -> used in offline mode

@@ -34,8 +34,8 @@ public class StepCount extends Observable{
 
     public void setCurrentSteps(int currentSteps) {
         this.currentSteps = currentSteps;
-        //setChanged();
-        //notifyObservers();
+        setChanged();
+        notifyObservers();
     }
 
     //@DynamoDBAttribute(attributeName = "dailySteps")
@@ -45,8 +45,8 @@ public class StepCount extends Observable{
 
     public void setDailySteps(Set<Integer> dailySteps) {
         this.dailySteps = dailySteps;
-        //setChanged();
-        //notifyObservers();
+        setChanged();
+        notifyObservers();
     }
 
 }

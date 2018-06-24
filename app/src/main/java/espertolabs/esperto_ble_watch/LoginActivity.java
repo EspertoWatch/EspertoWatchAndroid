@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
@@ -21,10 +22,20 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+import com.amazonaws.AmazonWebServiceRequest;
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.DefaultRequest;
+import com.amazonaws.Request;
+import com.amazonaws.auth.AWS4Signer;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.CognitoCachingCredentialsProvider;
+import com.amazonaws.http.HttpMethodName;
+import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.mobile.client.AWSMobileClient;
 
 //all cognito imports here
+import com.amazonaws.mobileconnectors.apigateway.ApiClientFactory;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoDevice;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUser;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserAttributes;
@@ -54,15 +65,21 @@ import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.facebook.FacebookSdk;
 import com.facebook.appevents.AppEventsLogger;
+import com.ghedeon.AwsInterceptor;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import okhttp3.OkHttpClient;
 
 import java.lang.reflect.Type;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -78,38 +95,22 @@ import java.util.Set;
 public class LoginActivity extends AppCompatActivity {
     TextView usernameView;
     TextView passwordView;
-
-    //TODO:: move
-    // Declare a DynamoDBMapper object
-    //DynamoDBMapper dynamoDBMapper; //map tables to Java classes
-    //AmazonDynamoDBClient dynamoDBClient;
-
     CognitoUserPool userPool;
+    private ApiGatewayHandler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-        Button fbRedirect= (Button)findViewById(R.id.facebookLogin);
+        Button fbRedirect = (Button) findViewById(R.id.facebookLogin);
         Button googleRedirect = (Button) findViewById(R.id.googleLogin);
         Button customLogin = (Button) findViewById(R.id.customLogin);
         usernameView = (TextView) findViewById(R.id.username); //accept custom username
         passwordView = (TextView) findViewById(R.id.password); //accept custom password
-        /*
-        // Instantiate a AmazonDynamoDBMapperClient
-        dynamoDBClient = Region.getRegion(Regions.US_EAST_1)
-                .createClient(AmazonDynamoDBClient.class,
-                        AWSMobileClient.getInstance().getCredentialsProvider(),
-                        new ClientConfiguration());
 
-
-        this.dynamoDBMapper = DynamoDBMapper.builder()
-                .dynamoDBClient(dynamoDBClient)
-                .awsConfiguration(AWSMobileClient.getInstance().getConfiguration())
-                .build();
-        */
-        userPool = new CognitoUserPool(getApplicationContext(), getResources().getString(R.string.cognito_userpool_id), getResources().getString(R.string.cognito_client_id), getResources().getString(R.string.cognito_client_secret), Regions.fromName(getResources().getString(R.string.cognito_region)));
+        userPool = new CognitoUserPool(getApplicationContext(), getString(R.string.cognito_userpool_id), getString(R.string.cognito_client_id), getString(R.string.cognito_client_secret), Regions.fromName(getString(R.string.cognito_region)));
     }
+
 
     @Override
     protected void onResume(){
@@ -131,16 +132,36 @@ public class LoginActivity extends AppCompatActivity {
     AuthenticationHandler authenticationHandler = new AuthenticationHandler() {
         @Override
         public void onSuccess(CognitoUserSession userSession, CognitoDevice newDevice) {
-            Log.d("userSession", userSession.toString());
-            //todo: get rid of dummy vals
-            Intent displaySummary = new Intent(getApplicationContext(), SummaryActivity.class);
-//            displaySummary.putExtra("deviceAddress", "defaultAddress");
-            displaySummary.putExtra("deviceAddress", "D4:49:8C:44:48:82");
-            displaySummary.putExtra("firstName", "defaultFirstName");
-            displaySummary.putExtra("lastName", "defaultLastName");
-            displaySummary.putExtra("username", userSession.getUsername());
-            displaySummary.putExtra("goalSetting", "default");
-            startActivity(displaySummary);
+            Log.d("userSession", userSession.getUsername());
+
+            //save userId to local storage (will be necessary for get requests)
+            final String userId = userSession.getUsername();
+            SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("userId", Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putString("USER_ID", userId);
+            editor.putString("USER_TOKEN", userSession.getIdToken().getJWTToken());
+            editor.commit();
+
+            handler = new ApiGatewayHandler();
+
+            new Thread(new Runnable(){
+                @Override
+                public void run(){
+                    String response = handler.getUserInfo(userId);
+                    Log.d("User_info_response", response);
+
+                    if(response != ""){
+                        Gson g = new Gson();
+                        UserAccount user = g.fromJson(response, UserAccount.class);
+                        Log.d("built_user", user.getName());
+
+                        Intent displaySummary = new Intent(getApplicationContext(), SummaryActivity.class);
+                        displaySummary.putExtra("deviceAddress", "D4:49:8C:44:48:82");
+                        displaySummary.putExtra("user_obj", user);
+                        startActivity(displaySummary);
+                    }
+                }
+            }).start();
         }
         @Override
         public void getAuthenticationDetails(AuthenticationContinuation authenticationContinuation, String userId) {
@@ -180,7 +201,6 @@ public class LoginActivity extends AppCompatActivity {
 
         //Authenticate user
         user.getSessionInBackground(authenticationHandler);
-        //authenticate(usernameInput, passwordInput);
     }
 
     private void getUserAuthentication(AuthenticationContinuation continuation, String username) {
@@ -215,84 +235,5 @@ public class LoginActivity extends AppCompatActivity {
         startActivity(registerUser);
         finish();
     }
-
-    /*
-    //TODO:: abstract out
-    //Authenticate user - confirm password and username combination
-    private void authenticate(final String username, final String password){
-        //query database for account
-        //todo: use cognito instead
-
-        boolean test = false;
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-
-                Looper.prepare();
-
-                UserAccount user = new UserAccount();
-                user.setUsername(username);
-
-                Map<String, AttributeValue> expressionAttributeValues = new HashMap<String, AttributeValue>();
-                expressionAttributeValues.put(":p", new AttributeValue().withS(password));
-
-                DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression()
-                        .withHashKeyValues(user)
-                        .withFilterExpression("password = :p")
-                        .withExpressionAttributeValues(expressionAttributeValues)
-                        .withConsistentRead(false);
-
-                //query database
-               // PaginatedList<UserAccount> result = dynamoDBMapper.query(UserAccount.class, queryExpression);
-                 List<UserAccount> result = dynamoDBMapper.query(UserAccount.class, queryExpression);
-
-                Gson gson = new Gson();
-                StringBuilder stringBuilder = new StringBuilder();
-                Type listType = new TypeToken<List<String>>() {}.getType();
-                List<String> target = new LinkedList<String>();
-
-                UserAccount signedInUser = new UserAccount();
-
-                // Loop through query results
-                for (int i = 0; i < result.size(); i++) {
-                    Log.i("result", result.get(i).toString());
-                    String jsonFormOfItem = gson.toJson(result.get(i));
-
-                    signedInUser = gson.fromJson(jsonFormOfItem, UserAccount.class);
-                }
-
-                // Add your code here to deal with the data result
-                Log.d("Query result: ", stringBuilder.toString());
-
-                if (result.isEmpty()) {
-                    Log.i("Login", "User is not authenticated");
-                    runOnUiThread (new Thread(new Runnable() {
-                        public void run() {
-                           alertAuthenticationFailure();
-                        }
-                    }));
-
-                    //TODO:: move to a seperate handler
-                    //alertAuthenticationFailed();
-
-                }
-                else{
-                    //If user has been authenticated
-                    //Transition to summary page
-                    Intent displaySummary = new Intent(getApplicationContext(), SummaryActivity.class);
-                    //TODO:: pass in authentication token here
-                    displaySummary.putExtra("deviceAddress", signedInUser.getDeviceAddress());
-                    displaySummary.putExtra("firstName", signedInUser.getFirstName());
-                    displaySummary.putExtra("lastName", signedInUser.getLastName());
-                    displaySummary.putExtra("username", signedInUser.getUsername());
-                    displaySummary.putExtra("goalSetting", signedInUser.getGoalSetting());
-                    startActivity(displaySummary);
-                    finish();
-
-                }
-            }
-        }).start();
-    }
-    */
 }
 

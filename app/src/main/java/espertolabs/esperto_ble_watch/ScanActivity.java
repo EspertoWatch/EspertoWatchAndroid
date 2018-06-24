@@ -126,9 +126,9 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         newUser.setUsername(userData[2]);
         newUser.setPassword(userData[3]);
         newUser.setDeviceAddress(deviceAddress);
-        newUser.setGoalSetting(userData[4]);
-        newUser.setFirstName(userData[0]);
-        newUser.setLastName(userData[1]);
+        //newUser.setGoalSetting(userData[4]);
+        //newUser.setFirstName(userData[0]);
+        //newUser.setLastName(userData[1]);
         //make asynchronous method call to synchronous DynamoDB
         // TODO: change to API gateway
 //        Runnable runnable = new Runnable() {
