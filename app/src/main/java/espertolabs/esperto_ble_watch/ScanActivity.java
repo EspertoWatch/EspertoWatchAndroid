@@ -148,7 +148,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         CognitoUserAttributes userAttributes = new CognitoUserAttributes();
         userAttributes.addAttribute("email", userInfo[2]);
 
-        userPool.signUpInBackground(uniqueId, userInfo[3], userAttributes, null, signUpCallback);
+        userPool.signUpInBackground(userInfo[2], userInfo[3], userAttributes, null, signUpCallback);
     }
 
     public void CreateUserRecord(){

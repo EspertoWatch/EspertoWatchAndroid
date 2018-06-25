@@ -17,6 +17,7 @@ import java.util.Map;
 
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
+import okhttp3.ResponseBody;
 
 public class ApiGatewayHandler {
     String encoded_access_key = "QUtJQUpSR08yUVlHRkNJUERSQlENCg==";
@@ -55,8 +56,10 @@ public class ApiGatewayHandler {
                     .build();
             okhttp3.Response response = null;
             response = getHttpClient().newCall(request2).execute();
-            body = response.body().string();
-            Log.d("HR_resp_body", "response " + body);
+            if(response.code() != 500){
+                body = response.body().string();
+                Log.d("UI_resp_body", "response " + body);
+            }
         } catch (Exception e) {
             Log.d("HR_resp_error", "error " + e);
         }
@@ -73,8 +76,10 @@ public class ApiGatewayHandler {
                     .build();
             okhttp3.Response response = null;
             response = getHttpClient().newCall(request2).execute();
-            body = response.body().string();
-            Log.d("SC_resp_body", "response " + body);
+            if(response.code() != 500){
+                body = response.body().string();
+                Log.d("UI_resp_body", "response " + body);
+            }
         } catch (Exception e) {
             Log.d("SC_resp_error", "error " + e);
         }
@@ -92,8 +97,10 @@ public class ApiGatewayHandler {
                     .build();
             okhttp3.Response response = null;
             response = getHttpClient().newCall(request2).execute();
-            body = response.body().string();
-            Log.d("UI_resp_body", "response " + body);
+            if(response.code() != 500){
+                body = response.body().string();
+                Log.d("UI_resp_body", "response " + body);
+            }
         } catch (Exception e) {
             Log.d("UI_resp_error", "error " + e);
         }
