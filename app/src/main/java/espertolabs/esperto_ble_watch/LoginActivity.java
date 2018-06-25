@@ -109,7 +109,11 @@ public class LoginActivity extends AppCompatActivity {
         usernameView = (TextView) findViewById(R.id.username); //accept custom username
         passwordView = (TextView) findViewById(R.id.password); //accept custom password
 
-        userPool = new CognitoUserPool(getApplicationContext(), getString(R.string.cognito_userpool_id), getString(R.string.cognito_client_id), getString(R.string.cognito_client_secret), Regions.fromName(getString(R.string.cognito_region)));
+        userPool = new CognitoUserPool(getApplicationContext(),
+                getString(R.string.cognito_userpool_id),
+                getString(R.string.cognito_client_id), 
+                getString(R.string.cognito_client_secret),
+                Regions.fromName(getString(R.string.cognito_region)));
 
         CognitoUser currentUser = userPool.getCurrentUser();
         if(currentUser != null){

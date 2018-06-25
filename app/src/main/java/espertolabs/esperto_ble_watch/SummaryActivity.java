@@ -698,7 +698,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
     public void signOut(){
         //TODO: MOVE ALL COGNITO STUFF TO A HANDLER
-        CognitoUserPool userPool = new CognitoUserPool(getApplicationContext(), getString(R.string.cognito_userpool_id), getString(R.string.cognito_client_id), getString(R.string.cognito_client_secret), Regions.fromName(getString(R.string.cognito_region)));
+        CognitoUserPool userPool = new CognitoUserPool(getApplicationContext(),
+                getString(R.string.cognito_userpool_id),
+                getString(R.string.cognito_client_id),
+                getString(R.string.cognito_client_secret),
+                Regions.fromName(getString(R.string.cognito_region)));
         userPool.getCurrentUser().signOut();
         Intent splashScreen = new Intent(getApplicationContext(), MainActivity.class);
         startActivity(splashScreen);
