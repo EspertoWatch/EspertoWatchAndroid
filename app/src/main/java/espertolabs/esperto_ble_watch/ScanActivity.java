@@ -10,6 +10,7 @@ import android.bluetooth.le.ScanResult;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
@@ -17,6 +18,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.ParcelUuid;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -31,6 +33,11 @@ import android.Manifest.permission;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.mobile.client.AWSMobileClient;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUser;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserAttributes;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserCodeDeliveryDetails;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserPool;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.SignUpHandler;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBTable;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
@@ -41,6 +48,8 @@ import com.skyfishjy.library.RippleBackground;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
 
 import org.w3c.dom.Text;
+
+import java.util.UUID;
 
 
 public class ScanActivity extends AppCompatActivity implements Callback {
@@ -53,11 +62,9 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     String watch_name = "Esperto";
     String device_addr;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 987;
+    String uniqueId;
 
-    //TODO:: move
-    // Declare a DynamoDBMapper object
-    DynamoDBMapper dynamoDBMapper; //map tables to Java classes
-    AmazonDynamoDBClient dynamoDBClient;
+    CognitoUserPool userPool;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,22 +92,36 @@ public class ScanActivity extends AppCompatActivity implements Callback {
             requestPermissions(new String[]{permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
         }
 
-        // Instantiate a AmazonDynamoDBMapperClient
-        dynamoDBClient = Region.getRegion(Regions.US_EAST_1)
-                .createClient(AmazonDynamoDBClient.class,
-                        AWSMobileClient.getInstance().getCredentialsProvider(),
-                        new ClientConfiguration()
-                );
-
-        this.dynamoDBMapper = DynamoDBMapper.builder()
-                .dynamoDBClient(dynamoDBClient)
-                .awsConfiguration(AWSMobileClient.getInstance().getConfiguration())
-                .build();
+        userPool = new CognitoUserPool(getApplicationContext(), getString(R.string.cognito_userpool_id), getString(R.string.cognito_client_id), getString(R.string.cognito_client_secret), Regions.fromName(getString(R.string.cognito_region)));
 
         //check if Bluetooth is enabled
         Intent intent = new Intent(this, BLEService.class);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
     }
+
+    SignUpHandler signUpCallback = new SignUpHandler() {
+
+        @Override
+        public void onSuccess(CognitoUser cognitoUser, boolean userConfirmed, CognitoUserCodeDeliveryDetails cognitoUserCodeDeliveryDetails) {
+            // Sign-up was successful
+            CreateUserRecord();
+
+            // Check if this user (cognitoUser) needs to be confirmed
+            if(!userConfirmed) {
+                // This user must be confirmed and a confirmation code was sent to the user
+                // cognitoUserCodeDeliveryDetails will indicate where the confirmation code was sent
+                // Get the confirmation code from user
+            }
+            else {
+                // The user has already been confirmed
+            }
+        }
+
+        @Override
+        public void onFailure(Exception exception) {
+            alertSignUpFailure();
+        }
+    };
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
@@ -121,27 +142,18 @@ public class ScanActivity extends AppCompatActivity implements Callback {
      */
 
     //TODO:: move into DBHandler to utilize brigde pattern
-    public void createAccounts(String [] userData, String deviceAddress){
-        final UserAccount newUser = new UserAccount();
-        newUser.setUsername(userData[2]);
-        newUser.setPassword(userData[3]);
-        newUser.setDeviceAddress(deviceAddress);
-        //newUser.setGoalSetting(userData[4]);
-        //newUser.setFirstName(userData[0]);
-        //newUser.setLastName(userData[1]);
-        //make asynchronous method call to synchronous DynamoDB
-        // TODO: change to API gateway
-//        Runnable runnable = new Runnable() {
-//            public void run() {
-//                //add account to database
-//                dynamoDBMapper.save(newUser);
-//                //move to login screen
-//            }
-//        };
-//        Thread mythread = new Thread(runnable);
-//        mythread.start();
+    public void createAccounts(){
+        uniqueId = UUID.randomUUID().toString();
+        // Create a CognitoUserAttributes object and add user attributes
+        CognitoUserAttributes userAttributes = new CognitoUserAttributes();
+        userAttributes.addAttribute("email", userInfo[2]);
+
+        userPool.signUpInBackground(uniqueId, userInfo[3], userAttributes, null, signUpCallback);
     }
 
+    public void CreateUserRecord(){
+        //TODO: POST TO USER TABLE VIA APIGATEWAY
+    }
 
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
@@ -207,6 +219,22 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         super.onActivityResult(requestCode,resultCode,data);
     }*/
 
+    //alert user of failed login attempt
+    public void alertSignUpFailure(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert);
+        builder.setMessage(getResources().getString(R.string.try_again))
+                .setTitle(getResources().getString(R.string.error_message));
+
+        builder.setPositiveButton(getResources().getString(R.string.ok), new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User clicked OK button
+                dialog.dismiss();
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -249,7 +277,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     //expand to multiple users
     public void selectDevice(View v){
         //add to user account and send intent to login activity
-        createAccounts(userInfo, device_addr); //create user account with associated device address
+        createAccounts(); //create user account with associated device address
 
         //return to login page
         Intent loginUser = new Intent(v.getContext(), LoginActivity.class);
