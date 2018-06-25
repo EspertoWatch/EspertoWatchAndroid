@@ -34,12 +34,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.mobile.client.AWSMobileClient;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUser;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserPool;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBQueryExpression;
 import com.amazonaws.regions.Region;
@@ -197,6 +200,15 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         //retrieve intent
         Intent userIntent = getIntent();
         user = (UserAccount) getIntent().getSerializableExtra("user_obj");
+
+        TextView logoutButton = (TextView) findViewById(R.id.text_logout);
+
+        logoutButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                signOut();
+            }
+        });
 
         //retrieve data
         getHRDB();
@@ -621,12 +633,14 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         //store step count into database
     }
 
+    /*
     @Override
     public void onBackPressed() {
         Intent login = new Intent(getApplicationContext(), LoginActivity.class);
         startActivity(login);
         finish();
     }
+    */
 
     private void getHRDB(){
         //query database for heart data
@@ -680,5 +694,18 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         else if(obj == userSteps){
             Log.i("State", "Step count state has changed");
         }
+    }
+
+    public void signOut(){
+        //TODO: MOVE ALL COGNITO STUFF TO A HANDLER
+        CognitoUserPool userPool = new CognitoUserPool(getApplicationContext(),
+                getString(R.string.cognito_userpool_id),
+                getString(R.string.cognito_client_id),
+                getString(R.string.cognito_client_secret),
+                Regions.fromName(getString(R.string.cognito_region)));
+        userPool.getCurrentUser().signOut();
+        Intent splashScreen = new Intent(getApplicationContext(), MainActivity.class);
+        startActivity(splashScreen);
+        finish();
     }
 }
