@@ -97,6 +97,7 @@ public class LoginActivity extends AppCompatActivity {
     TextView passwordView;
     CognitoUserPool userPool;
     private ApiGatewayHandler handler;
+    Boolean hasAttemptedLogin = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,7 +109,16 @@ public class LoginActivity extends AppCompatActivity {
         usernameView = (TextView) findViewById(R.id.username); //accept custom username
         passwordView = (TextView) findViewById(R.id.password); //accept custom password
 
-        userPool = new CognitoUserPool(getApplicationContext(), getString(R.string.cognito_userpool_id), getString(R.string.cognito_client_id), getString(R.string.cognito_client_secret), Regions.fromName(getString(R.string.cognito_region)));
+        userPool = new CognitoUserPool(getApplicationContext(),
+                getString(R.string.cognito_userpool_id),
+                getString(R.string.cognito_client_id), 
+                getString(R.string.cognito_client_secret),
+                Regions.fromName(getString(R.string.cognito_region)));
+
+        CognitoUser currentUser = userPool.getCurrentUser();
+        if(currentUser != null){
+            currentUser.getSessionInBackground(authenticationHandler);
+        }
     }
 
 
@@ -128,6 +138,7 @@ public class LoginActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
+    //TODO: MOVE COGNITO STUFF TO ITS OWN CLASS
     // Callback handler for the sign-in process
     AuthenticationHandler authenticationHandler = new AuthenticationHandler() {
         @Override
@@ -178,7 +189,9 @@ public class LoginActivity extends AppCompatActivity {
 
         @Override
         public void onFailure(Exception exception) {
-            alertAuthenticationFailure();
+            if(hasAttemptedLogin == true){
+                alertAuthenticationFailure();
+            }
             // Sign-in failed, check exception for the cause
         }
         @Override
@@ -198,6 +211,8 @@ public class LoginActivity extends AppCompatActivity {
         Log.i("password",passwordInput);
         CognitoUser user = userPool.getUser(usernameInput);
         Log.d("cognitoUser", user.toString());
+
+        hasAttemptedLogin = true;
 
         //Authenticate user
         user.getSessionInBackground(authenticationHandler);
