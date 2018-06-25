@@ -65,4 +65,53 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.0" />
 
+    <TextView
+        android:id="@+id/enter_code"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Enter Confirmation Code(found in email)"
+        android:textAlignment="center"
+        android:textColor="@color/colorPrimary"
+        android:textStyle="bold"
+        android:translationZ="1dp"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.65" />
+
+    <EditText
+        android:id="@+id/confirmation_code"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="32dp"
+        android:ems="10"
+        android:hint="Enter Code"
+        android:inputType="textPersonName"
+        android:textColor="@color/colorPrimary"
+        android:textColorHint="#d3d3d3"
+        app:layout_constraintEnd_toEndOf="@+id/enter_code"
+        app:layout_constraintRight_toRightOf="@+id/enter_code"
+        app:layout_constraintStart_toStartOf="@+id/enter_code"
+        app:layout_constraintTop_toBottomOf="@+id/enter_code"
+        android:visibility="invisible"/>
+
+    <Button
+        android:id="@+id/submit_button"
+        android:layout_width="250dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="32dp"
+        android:backgroundTint="@color/navbar"
+        android:text="Submit"
+        android:textColor="@color/colorWhite"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@+id/confirmation_code"
+        app:layout_constraintStart_toStartOf="@+id/confirmation_code"
+        app:layout_constraintTop_toBottomOf="@+id/confirmation_code"
+        android:visibility="invisible"/>
+
 </android.support.constraint.ConstraintLayout>

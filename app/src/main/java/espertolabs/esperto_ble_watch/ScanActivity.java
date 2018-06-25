@@ -24,6 +24,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -58,6 +59,9 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     String[] devices;
     ImageButton deviceButton;
     TextView deviceText;
+    TextView enterCode;
+    EditText confirmationCode;
+    Button submitButton;
     String[] userInfo;
     String watch_name = "Esperto";
     String device_addr;
@@ -65,6 +69,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     String uniqueId;
 
     CognitoUserPool userPool;
+    CognitoUser newUser;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,7 +77,9 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         watch_name = getString(R.string.esperto_device_name);
         deviceButton = findViewById(R.id.watchDevice);
         deviceText = findViewById(R.id.deviceName);
-
+        enterCode = findViewById(R.id.enter_code);
+        confirmationCode = findViewById(R.id.confirmation_code);
+        submitButton = findViewById(R.id.submit_button);
         //grab intent info
         Intent registerIntent = getIntent();
         //grab user data
@@ -104,16 +111,19 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         @Override
         public void onSuccess(CognitoUser cognitoUser, boolean userConfirmed, CognitoUserCodeDeliveryDetails cognitoUserCodeDeliveryDetails) {
             // Sign-up was successful
-            CreateUserRecord();
-
             // Check if this user (cognitoUser) needs to be confirmed
             if(!userConfirmed) {
                 // This user must be confirmed and a confirmation code was sent to the user
                 // cognitoUserCodeDeliveryDetails will indicate where the confirmation code was sent
                 // Get the confirmation code from user
+                newUser = cognitoUser;
+                enterCode.setVisibility(View.VISIBLE);
+                confirmationCode.setVisibility(View.VISIBLE);
+                submitButton.setVisibility(View.VISIBLE);
             }
             else {
                 // The user has already been confirmed
+                CreateUserRecord();
             }
         }
 
@@ -146,14 +156,25 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         uniqueId = UUID.randomUUID().toString();
         // Create a CognitoUserAttributes object and add user attributes
         CognitoUserAttributes userAttributes = new CognitoUserAttributes();
-        userAttributes.addAttribute("email", userInfo[2]);
 
         userPool.signUpInBackground(userInfo[2], userInfo[3], userAttributes, null, signUpCallback);
     }
 
     public void CreateUserRecord(){
         //TODO: POST TO USER TABLE VIA APIGATEWAY
+        /*
+        //return to login page
+        Intent loginUser = new Intent(v.getContext(), LoginActivity.class);
+        startActivity(loginUser);
+        finish();
+        */
     }
+
+    public void onSubmitCode(){
+        //TODO: on click method for submitButton
+        //needs to send confirmation code to amazon
+    }
+
 
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
@@ -278,11 +299,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     public void selectDevice(View v){
         //add to user account and send intent to login activity
         createAccounts(); //create user account with associated device address
-
-        //return to login page
-        Intent loginUser = new Intent(v.getContext(), LoginActivity.class);
-        startActivity(loginUser);
-        finish();
     }
 
 
