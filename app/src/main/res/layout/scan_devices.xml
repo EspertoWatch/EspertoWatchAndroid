@@ -112,6 +112,7 @@
         app:layout_constraintEnd_toEndOf="@+id/confirmation_code"
         app:layout_constraintStart_toStartOf="@+id/confirmation_code"
         app:layout_constraintTop_toBottomOf="@+id/confirmation_code"
-        android:visibility="invisible"/>
+        android:visibility="invisible"
+        android:onClick="onSubmitCode"/>
 
 </android.support.constraint.ConstraintLayout>

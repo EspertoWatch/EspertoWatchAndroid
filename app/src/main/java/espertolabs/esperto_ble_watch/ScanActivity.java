@@ -38,6 +38,7 @@ import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUser;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserAttributes;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserCodeDeliveryDetails;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserPool;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.GenericHandler;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.SignUpHandler;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBTable;
 import com.amazonaws.regions.Region;
@@ -107,7 +108,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     }
 
     SignUpHandler signUpCallback = new SignUpHandler() {
-
         @Override
         public void onSuccess(CognitoUser cognitoUser, boolean userConfirmed, CognitoUserCodeDeliveryDetails cognitoUserCodeDeliveryDetails) {
             // Sign-up was successful
@@ -126,12 +126,26 @@ public class ScanActivity extends AppCompatActivity implements Callback {
                 CreateUserRecord();
             }
         }
+        @Override
+        public void onFailure(Exception exception) {
+            alertFailure(getResources().getString(R.string.sign_up_error));
+        }
+    };
+
+    GenericHandler confirmationCallback = new GenericHandler() {
+
+        @Override
+        public void onSuccess() {
+            CreateUserRecord();
+        }
 
         @Override
         public void onFailure(Exception exception) {
-            alertSignUpFailure();
+            alertFailure(getResources().getString(R.string.wrong_confirmation_code));
         }
     };
+
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
@@ -170,9 +184,9 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         */
     }
 
-    public void onSubmitCode(){
-        //TODO: on click method for submitButton
-        //needs to send confirmation code to amazon
+    public void onSubmitCode(View v){
+        //needs to send code to amazon
+        newUser.confirmSignUpInBackground(confirmationCode.getText().toString(), false, confirmationCallback);
     }
 
 
@@ -240,10 +254,10 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         super.onActivityResult(requestCode,resultCode,data);
     }*/
 
-    //alert user of failed login attempt
-    public void alertSignUpFailure(){
+    //alert user of failed attempt
+    public void alertFailure(String errorMessage){
         AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert);
-        builder.setMessage(getResources().getString(R.string.try_again))
+        builder.setMessage(errorMessage)
                 .setTitle(getResources().getString(R.string.error_message));
 
         builder.setPositiveButton(getResources().getString(R.string.ok), new DialogInterface.OnClickListener() {
