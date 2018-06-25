@@ -13,6 +13,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -34,10 +35,17 @@ import android.Manifest.permission;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.mobile.client.AWSMobileClient;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoDevice;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUser;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserAttributes;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserCodeDeliveryDetails;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserPool;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserSession;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.AuthenticationContinuation;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.AuthenticationDetails;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.ChallengeContinuation;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.MultiFactorAuthenticationContinuation;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.AuthenticationHandler;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.GenericHandler;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.SignUpHandler;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBTable;
@@ -45,10 +53,13 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.google.common.collect.Table;
+import com.google.gson.Gson;
 import com.skyfishjy.library.RippleBackground;
 
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.w3c.dom.Text;
 
 import java.util.UUID;
@@ -71,6 +82,8 @@ public class ScanActivity extends AppCompatActivity implements Callback {
 
     CognitoUserPool userPool;
     CognitoUser newUser;
+
+    private ApiGatewayHandler handler;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -123,7 +136,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
             }
             else {
                 // The user has already been confirmed
-                CreateUserRecord();
+                //CreateUserRecord();
             }
         }
         @Override
@@ -136,7 +149,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
 
         @Override
         public void onSuccess() {
-            CreateUserRecord();
+            newUser.getSessionInBackground(authenticationHandler);
         }
 
         @Override
@@ -144,6 +157,40 @@ public class ScanActivity extends AppCompatActivity implements Callback {
             alertFailure(getResources().getString(R.string.wrong_confirmation_code));
         }
     };
+
+    //TODO: MOVE COGNITO STUFF TO ITS OWN CLASS
+    // Callback handler for the sign-in process
+    AuthenticationHandler authenticationHandler = new AuthenticationHandler() {
+        @Override
+        public void onSuccess(CognitoUserSession userSession, CognitoDevice newDevice) {
+            Log.d("userSession", userSession.getUsername());
+            final String userId = userSession.getUsername();
+            CreateUserRecord(userId);
+
+        }
+        @Override
+        public void getAuthenticationDetails(AuthenticationContinuation authenticationContinuation, String userId) {
+            getUserAuthentication(authenticationContinuation, userId);
+        }
+
+        @Override
+        public void getMFACode(MultiFactorAuthenticationContinuation multiFactorAuthenticationContinuation) {
+        }
+
+        @Override
+        public void onFailure(Exception exception) {
+            alertFailure(getResources().getString(R.string.sign_up_error));
+        }
+        @Override
+        public void authenticationChallenge(ChallengeContinuation continuation) {
+        }
+    };
+
+    private void getUserAuthentication(AuthenticationContinuation continuation, String username) {
+        AuthenticationDetails authenticationDetails = new AuthenticationDetails(userInfo[2], userInfo[3], null);
+        continuation.setAuthenticationDetails(authenticationDetails);
+        continuation.continueTask();
+    }
 
 
 
@@ -174,14 +221,38 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         userPool.signUpInBackground(userInfo[2], userInfo[3], userAttributes, null, signUpCallback);
     }
 
-    public void CreateUserRecord(){
-        //TODO: POST TO USER TABLE VIA APIGATEWAY
-        /*
-        //return to login page
-        Intent loginUser = new Intent(v.getContext(), LoginActivity.class);
-        startActivity(loginUser);
-        finish();
-        */
+    public void CreateUserRecord(String userId){
+        handler = new ApiGatewayHandler();
+        new Thread(new Runnable(){
+            @Override
+            public void run(){
+                JSONObject userJsonObject = new JSONObject();
+                try {
+                    userJsonObject.put("userId", userId);
+                    userJsonObject.put("name", userInfo[0] + " " + userInfo[1]);
+                    //NOTE: NEED TO MODIFY FUNCTION ON BACKEND TO ENSURE THAT DEVICE ADDR GETS POSTED
+                    userJsonObject.put("deviceAddr", device_addr);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                String userJson = userJsonObject.toString();
+                String response = handler.postUserInfo(userJson);
+                Log.d("User_info_response", response);
+
+                if(response != ""){
+                    Gson g = new Gson();
+                    UserAccount user = g.fromJson(response, UserAccount.class);
+                    if(user != null){
+                        //return to login page
+                        Intent loginUser = new Intent(getApplicationContext(), LoginActivity.class);
+                        startActivity(loginUser);
+                        finish();
+                    }
+                }
+            }
+        }).start();
     }
 
     public void onSubmitCode(View v){

@@ -214,6 +214,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         getHRDB();
         getStepDB();
         greetUser();
+        //TODO: for now we are just setting step/hr to 0 if no data
+        //TODO: need to replace with some user friendly msg
     }
 
     @Override
@@ -650,8 +652,13 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 //send request via apigateway
                 String response = handler.getHeartRate(userId);
                 Gson g = new Gson();
-                HeartRate hr = g.fromJson(response, HeartRate.class);
-                userHR.setCurrentHR(hr.getCurrentHR());
+                if(response != ""){
+                    HeartRate hr = g.fromJson(response, HeartRate.class);
+                    userHR.setCurrentHR(hr.getCurrentHR());
+                }
+                else{
+                    userHR.setCurrentHR(0);
+                }
 
                 //insert fake dailyHR vals for now
                 //insert some fake vals for now
@@ -668,18 +675,21 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             @Override
             public void run() {
                 //send request via apigateway
-                handler.getStepCount(userId);
+                String response = handler.getStepCount(userId);
+                Gson g = new Gson();
+                if(response != ""){
+                    //StepCount sc = g.fromJson(response, StepCount.class);
+                    //TODO: ISSUE WITH GSON INVESTIGATE LATER
+                    userSteps.setCurrentSteps(10000);
+                }
+                else{
+                    userSteps.setCurrentSteps(0);
+                }
 
                 //insert some fake vals for now
                 Set<Integer> dailySteps = new HashSet<>(Arrays.asList(8000, 9000, 10000, 9000, 8200, 9005, 10500, 9580, 8100, 9600, 10250, 9890, 8012));
-                Integer currentSteps = 8500;
-                userSteps.setCurrentSteps(currentSteps);
                 userSteps.setDailySteps(dailySteps);
                 userSteps.setUsername(user.getUsername());
-
-                //update views
-                //steps_current.setText(userSteps.getCurrentSteps());
-
             }
         }).start();
     }
