@@ -149,7 +149,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     };
 
     GenericHandler confirmationCallback = new GenericHandler() {
-
         @Override
         public void onSuccess() {
             newUser.getSessionInBackground(authenticationHandler);
@@ -329,8 +328,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     //alert user of failed attempt
     public void alertFailure(String errorMessage){
         AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert);
-        builder.setMessage(errorMessage)
-                .setTitle(getResources().getString(R.string.error_message));
+        builder.setMessage(errorMessage).setTitle(getResources().getString(R.string.error_message));
         builder.setPositiveButton(getResources().getString(R.string.ok), new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
                 // User clicked OK button
