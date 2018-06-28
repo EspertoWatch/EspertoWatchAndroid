@@ -23,6 +23,8 @@
     <string name="continue_prompt">Continue</string>
     <string name="error_message">Authentication failure.</string>
     <string name="try_again">Incorrect username or password, please try again :)</string>
+    <string name="sign_up_error">We could not create your account, please try again :)</string>
+    <string name="wrong_confirmation_code">You have entered the wrong code, please try again. :)</string>
     <string name="ok">OK</string>
 
     <!-- Strings related to Register activity-->

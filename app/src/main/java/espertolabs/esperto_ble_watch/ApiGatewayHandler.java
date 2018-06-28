@@ -17,6 +17,7 @@ import java.util.Map;
 
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
+import okhttp3.ResponseBody;
 
 public class ApiGatewayHandler {
     String encoded_access_key = "QUtJQUpSR08yUVlHRkNJUERSQlENCg==";
@@ -32,6 +33,9 @@ public class ApiGatewayHandler {
     AWSCredentialsProvider credentialsProvider = new StaticCredentialsProvider(credentials);
 
     AwsInterceptor awsInterceptor = new AwsInterceptor(credentialsProvider, "execute-api", "us-east-1");
+
+    public static final okhttp3.MediaType JSON = okhttp3.MediaType.parse("application/json; charset=utf-8");
+
     final OkHttpClient client = new OkHttpClient.Builder()
             .addInterceptor(awsInterceptor)
             .build();
@@ -55,8 +59,10 @@ public class ApiGatewayHandler {
                     .build();
             okhttp3.Response response = null;
             response = getHttpClient().newCall(request2).execute();
-            body = response.body().string();
-            Log.d("HR_resp_body", "response " + body);
+            if(response.code() != 500){
+                body = response.body().string();
+                Log.d("UI_resp_body", "response " + body);
+            }
         } catch (Exception e) {
             Log.d("HR_resp_error", "error " + e);
         }
@@ -73,8 +79,10 @@ public class ApiGatewayHandler {
                     .build();
             okhttp3.Response response = null;
             response = getHttpClient().newCall(request2).execute();
-            body = response.body().string();
-            Log.d("SC_resp_body", "response " + body);
+            if(response.code() != 500){
+                body = response.body().string();
+                Log.d("UI_resp_body", "response " + body);
+            }
         } catch (Exception e) {
             Log.d("SC_resp_error", "error " + e);
         }
@@ -92,8 +100,33 @@ public class ApiGatewayHandler {
                     .build();
             okhttp3.Response response = null;
             response = getHttpClient().newCall(request2).execute();
-            body = response.body().string();
-            Log.d("UI_resp_body", "response " + body);
+            if(response.code() != 500){
+                body = response.body().string();
+                Log.d("UI_resp_body", "response " + body);
+            }
+        } catch (Exception e) {
+            Log.d("UI_resp_error", "error " + e);
+        }
+
+        return body;
+    }
+
+    public String postUserInfo(String userJson){
+        final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/userInfo/";
+        String body = "";
+
+        try {
+            okhttp3.RequestBody req_body = okhttp3.RequestBody.create(JSON, userJson);
+            okhttp3.Request request2 = new okhttp3.Request.Builder()
+                                                          .url(invokeUrl)
+                                                          .post(req_body)
+                                                          .build();
+            okhttp3.Response response = null;
+            response = getHttpClient().newCall(request2).execute();
+            if(response.code() != 500){
+                body = response.body().string();
+                Log.d("UI_resp_body", "response " + body);
+            }
         } catch (Exception e) {
             Log.d("UI_resp_error", "error " + e);
         }

@@ -10,18 +10,22 @@ import android.bluetooth.le.ScanResult;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.ParcelUuid;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -31,16 +35,34 @@ import android.Manifest.permission;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.mobile.client.AWSMobileClient;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoDevice;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUser;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserAttributes;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserCodeDeliveryDetails;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserPool;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserSession;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.AuthenticationContinuation;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.AuthenticationDetails;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.ChallengeContinuation;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.MultiFactorAuthenticationContinuation;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.AuthenticationHandler;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.GenericHandler;
+import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.SignUpHandler;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBTable;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.google.common.collect.Table;
+import com.google.gson.Gson;
 import com.skyfishjy.library.RippleBackground;
 
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.w3c.dom.Text;
+
+import java.util.UUID;
 
 
 public class ScanActivity extends AppCompatActivity implements Callback {
@@ -49,23 +71,29 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     String[] devices;
     ImageButton deviceButton;
     TextView deviceText;
+    TextView enterCode;
+    EditText confirmationCode;
+    Button submitButton;
     String[] userInfo;
-    String watch_name = "Esperto";
-    String device_addr;
+    String watchName = "Esperto";
+    String deviceAddr;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 987;
+    String uniqueId;
 
-    //TODO:: move
-    // Declare a DynamoDBMapper object
-    DynamoDBMapper dynamoDBMapper; //map tables to Java classes
-    AmazonDynamoDBClient dynamoDBClient;
+    CognitoUserPool userPool;
+    CognitoUser newUser;
+
+    private ApiGatewayHandler handler;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.scan_devices);
-        watch_name = getString(R.string.esperto_device_name);
+        watchName = getString(R.string.esperto_device_name);
         deviceButton = findViewById(R.id.watchDevice);
         deviceText = findViewById(R.id.deviceName);
-
+        enterCode = findViewById(R.id.enter_code);
+        confirmationCode = findViewById(R.id.confirmation_code);
+        submitButton = findViewById(R.id.submit_button);
         //grab intent info
         Intent registerIntent = getIntent();
         //grab user data
@@ -85,22 +113,87 @@ public class ScanActivity extends AppCompatActivity implements Callback {
             requestPermissions(new String[]{permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
         }
 
-        // Instantiate a AmazonDynamoDBMapperClient
-        dynamoDBClient = Region.getRegion(Regions.US_EAST_1)
-                .createClient(AmazonDynamoDBClient.class,
-                        AWSMobileClient.getInstance().getCredentialsProvider(),
-                        new ClientConfiguration()
-                );
-
-        this.dynamoDBMapper = DynamoDBMapper.builder()
-                .dynamoDBClient(dynamoDBClient)
-                .awsConfiguration(AWSMobileClient.getInstance().getConfiguration())
-                .build();
+        userPool = new CognitoUserPool(getApplicationContext(),
+                                       getString(R.string.cognito_userpool_id),
+                                       getString(R.string.cognito_client_id),
+                                       getString(R.string.cognito_client_secret),
+                                       Regions.fromName(getString(R.string.cognito_region)));
 
         //check if Bluetooth is enabled
         Intent intent = new Intent(this, BLEService.class);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
     }
+
+    SignUpHandler signUpCallback = new SignUpHandler() {
+        @Override
+        public void onSuccess(CognitoUser cognitoUser, boolean userConfirmed, CognitoUserCodeDeliveryDetails cognitoUserCodeDeliveryDetails) {
+            // Sign-up was successful
+            // Check if this user (cognitoUser) needs to be confirmed
+            if(!userConfirmed) {
+                // This user must be confirmed and a confirmation code was sent to the user
+                // cognitoUserCodeDeliveryDetails will indicate where the confirmation code was sent
+                // Get the confirmation code from user
+                newUser = cognitoUser;
+                enterCode.setVisibility(View.VISIBLE);
+                confirmationCode.setVisibility(View.VISIBLE);
+                submitButton.setVisibility(View.VISIBLE);
+            } else {
+                // The user has already been confirmed
+                //CreateUserRecord();
+            }
+        }
+        @Override
+        public void onFailure(Exception exception) {
+            alertFailure(getResources().getString(R.string.sign_up_error));
+        }
+    };
+
+    GenericHandler confirmationCallback = new GenericHandler() {
+        @Override
+        public void onSuccess() {
+            newUser.getSessionInBackground(authenticationHandler);
+        }
+
+        @Override
+        public void onFailure(Exception exception) {
+            alertFailure(getResources().getString(R.string.wrong_confirmation_code));
+        }
+    };
+
+    //TODO: MOVE COGNITO STUFF TO ITS OWN CLASS
+    // Callback handler for the sign-in process
+    AuthenticationHandler authenticationHandler = new AuthenticationHandler() {
+        @Override
+        public void onSuccess(CognitoUserSession userSession, CognitoDevice newDevice) {
+            Log.d("userSession", userSession.getUsername());
+            final String userId = userSession.getUsername();
+            CreateUserRecord(userId);
+        }
+        @Override
+        public void getAuthenticationDetails(AuthenticationContinuation authenticationContinuation, String userId) {
+            getUserAuthentication(authenticationContinuation, userId);
+        }
+
+        @Override
+        public void getMFACode(MultiFactorAuthenticationContinuation multiFactorAuthenticationContinuation) {
+        }
+
+        @Override
+        public void onFailure(Exception exception) {
+            alertFailure(getResources().getString(R.string.sign_up_error));
+        }
+        @Override
+        public void authenticationChallenge(ChallengeContinuation continuation) {
+        }
+    };
+
+    private void getUserAuthentication(AuthenticationContinuation continuation, String username) {
+        AuthenticationDetails authenticationDetails = new AuthenticationDetails(userInfo[2], userInfo[3], null);
+        continuation.setAuthenticationDetails(authenticationDetails);
+        continuation.continueTask();
+    }
+
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
@@ -121,25 +214,50 @@ public class ScanActivity extends AppCompatActivity implements Callback {
      */
 
     //TODO:: move into DBHandler to utilize brigde pattern
-    public void createAccounts(String [] userData, String deviceAddress){
-        final UserAccount newUser = new UserAccount();
-        newUser.setUsername(userData[2]);
-        newUser.setPassword(userData[3]);
-        newUser.setDeviceAddress(deviceAddress);
-        //newUser.setGoalSetting(userData[4]);
-        //newUser.setFirstName(userData[0]);
-        //newUser.setLastName(userData[1]);
-        //make asynchronous method call to synchronous DynamoDB
-        // TODO: change to API gateway
-//        Runnable runnable = new Runnable() {
-//            public void run() {
-//                //add account to database
-//                dynamoDBMapper.save(newUser);
-//                //move to login screen
-//            }
-//        };
-//        Thread mythread = new Thread(runnable);
-//        mythread.start();
+    public void createAccounts(){
+        uniqueId = UUID.randomUUID().toString();
+        // Create a CognitoUserAttributes object and add user attributes
+        CognitoUserAttributes userAttributes = new CognitoUserAttributes();
+
+        userPool.signUpInBackground(userInfo[2], userInfo[3], userAttributes, null, signUpCallback);
+    }
+
+    public void CreateUserRecord(String userId){
+        handler = new ApiGatewayHandler();
+        new Thread(new Runnable(){
+            @Override
+            public void run(){
+                JSONObject userJsonObject = new JSONObject();
+                try {
+                    userJsonObject.put("userId", userId);
+                    userJsonObject.put("name", userInfo[0] + " " + userInfo[1]);
+                    //NOTE: NEED TO MODIFY FUNCTION ON BACKEND TO ENSURE THAT DEVICE ADDR GETS POSTED
+                    userJsonObject.put("deviceAddr", deviceAddr);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                String userJson = userJsonObject.toString();
+                String response = handler.postUserInfo(userJson);
+                Log.d("User_info_response", response);
+
+                if(response != ""){
+                    Gson g = new Gson();
+                    UserAccount user = g.fromJson(response, UserAccount.class);
+                    if(user != null){
+                        //return to login page
+                        Intent loginUser = new Intent(getApplicationContext(), LoginActivity.class);
+                        startActivity(loginUser);
+                        finish();
+                    }
+                }
+            }
+        }).start();
+    }
+
+    public void onSubmitCode(View v){
+        //needs to send code to amazon
+        newUser.confirmSignUpInBackground(confirmationCode.getText().toString(), false, confirmationCallback);
     }
 
 
@@ -207,6 +325,20 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         super.onActivityResult(requestCode,resultCode,data);
     }*/
 
+    //alert user of failed attempt
+    public void alertFailure(String errorMessage){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert);
+        builder.setMessage(errorMessage).setTitle(getResources().getString(R.string.error_message));
+        builder.setPositiveButton(getResources().getString(R.string.ok), new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User clicked OK button
+                dialog.dismiss();
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -233,15 +365,15 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     public void displayDevice(BluetoothDevice device, ImageButton btn, TextView txt){
         //display device address
         String name = device.getName();
-        device_addr = device.getAddress();
+        deviceAddr = device.getAddress();
         if(name == null) name = "unknown";
 
         //TODO:: modify for updated Esperto watch
         //update UI interface
-        if(name.equals(watch_name)){
+        if(name.equals(watchName)){
             //display icon
             btn.setVisibility(View.VISIBLE);
-            txt.setText("Esperto watch found at:\n" + device_addr);
+            txt.setText("Esperto watch found at:\n" + deviceAddr);
             txt.setVisibility(View.VISIBLE);
         }
     }
@@ -249,12 +381,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     //expand to multiple users
     public void selectDevice(View v){
         //add to user account and send intent to login activity
-        createAccounts(userInfo, device_addr); //create user account with associated device address
-
-        //return to login page
-        Intent loginUser = new Intent(v.getContext(), LoginActivity.class);
-        startActivity(loginUser);
-        finish();
+        createAccounts(); //create user account with associated device address
     }
 
 
