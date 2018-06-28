@@ -118,9 +118,9 @@ public class ApiGatewayHandler {
         try {
             okhttp3.RequestBody req_body = okhttp3.RequestBody.create(JSON, userJson);
             okhttp3.Request request2 = new okhttp3.Request.Builder()
-                    .url(invokeUrl)
-                    .post(req_body)
-                    .build();
+                                                          .url(invokeUrl)
+                                                          .post(req_body)
+                                                          .build();
             okhttp3.Response response = null;
             response = getHttpClient().newCall(request2).execute();
             if(response.code() != 500){

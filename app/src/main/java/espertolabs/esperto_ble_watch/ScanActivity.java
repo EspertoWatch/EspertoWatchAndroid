@@ -75,8 +75,8 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     EditText confirmationCode;
     Button submitButton;
     String[] userInfo;
-    String watch_name = "Esperto";
-    String device_addr;
+    String watchName = "Esperto";
+    String deviceAddr;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 987;
     String uniqueId;
 
@@ -88,7 +88,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.scan_devices);
-        watch_name = getString(R.string.esperto_device_name);
+        watchName = getString(R.string.esperto_device_name);
         deviceButton = findViewById(R.id.watchDevice);
         deviceText = findViewById(R.id.deviceName);
         enterCode = findViewById(R.id.enter_code);
@@ -113,7 +113,11 @@ public class ScanActivity extends AppCompatActivity implements Callback {
             requestPermissions(new String[]{permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
         }
 
-        userPool = new CognitoUserPool(getApplicationContext(), getString(R.string.cognito_userpool_id), getString(R.string.cognito_client_id), getString(R.string.cognito_client_secret), Regions.fromName(getString(R.string.cognito_region)));
+        userPool = new CognitoUserPool(getApplicationContext(),
+                                       getString(R.string.cognito_userpool_id),
+                                       getString(R.string.cognito_client_id),
+                                       getString(R.string.cognito_client_secret),
+                                       Regions.fromName(getString(R.string.cognito_region)));
 
         //check if Bluetooth is enabled
         Intent intent = new Intent(this, BLEService.class);
@@ -133,8 +137,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
                 enterCode.setVisibility(View.VISIBLE);
                 confirmationCode.setVisibility(View.VISIBLE);
                 submitButton.setVisibility(View.VISIBLE);
-            }
-            else {
+            } else {
                 // The user has already been confirmed
                 //CreateUserRecord();
             }
@@ -166,7 +169,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
             Log.d("userSession", userSession.getUsername());
             final String userId = userSession.getUsername();
             CreateUserRecord(userId);
-
         }
         @Override
         public void getAuthenticationDetails(AuthenticationContinuation authenticationContinuation, String userId) {
@@ -231,8 +233,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
                     userJsonObject.put("userId", userId);
                     userJsonObject.put("name", userInfo[0] + " " + userInfo[1]);
                     //NOTE: NEED TO MODIFY FUNCTION ON BACKEND TO ENSURE THAT DEVICE ADDR GETS POSTED
-                    userJsonObject.put("deviceAddr", device_addr);
-
+                    userJsonObject.put("deviceAddr", deviceAddr);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -330,7 +331,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         AlertDialog.Builder builder = new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert);
         builder.setMessage(errorMessage)
                 .setTitle(getResources().getString(R.string.error_message));
-
         builder.setPositiveButton(getResources().getString(R.string.ok), new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
                 // User clicked OK button
@@ -367,15 +367,15 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     public void displayDevice(BluetoothDevice device, ImageButton btn, TextView txt){
         //display device address
         String name = device.getName();
-        device_addr = device.getAddress();
+        deviceAddr = device.getAddress();
         if(name == null) name = "unknown";
 
         //TODO:: modify for updated Esperto watch
         //update UI interface
-        if(name.equals(watch_name)){
+        if(name.equals(watchName)){
             //display icon
             btn.setVisibility(View.VISIBLE);
-            txt.setText("Esperto watch found at:\n" + device_addr);
+            txt.setText("Esperto watch found at:\n" + deviceAddr);
             txt.setVisibility(View.VISIBLE);
         }
     }

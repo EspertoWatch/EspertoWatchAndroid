@@ -655,16 +655,13 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 if(response != ""){
                     HeartRate hr = g.fromJson(response, HeartRate.class);
                     userHR.setCurrentHR(hr.getCurrentHR());
-                }
-                else{
+                } else{
                     userHR.setCurrentHR(0);
                 }
-
                 //insert fake dailyHR vals for now
                 //insert some fake vals for now
                 Set<Integer> dailyHR = new HashSet<>(Arrays.asList(70, 60, 80, 100, 130, 61, 51, 62, 84, 102, 138, 65, 52, 60, 85, 111, 139, 62, 51, 67, 84, 120, 131, 68, 54));
                 userHR.setDailyHR(dailyHR);
-
             }
         }).start();
     }
@@ -681,8 +678,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     //StepCount sc = g.fromJson(response, StepCount.class);
                     //TODO: ISSUE WITH GSON INVESTIGATE LATER
                     userSteps.setCurrentSteps(10000);
-                }
-                else{
+                } else{
                     userSteps.setCurrentSteps(0);
                 }
 
