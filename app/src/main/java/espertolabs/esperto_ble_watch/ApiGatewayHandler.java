@@ -51,46 +51,23 @@ public class ApiGatewayHandler {
 
     public String getHeartRate(String userId){
         final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/heartRate/" + userId;
-        String body = "";
-        try {
-            okhttp3.Request request2 = new okhttp3.Request.Builder()
-                    .url(invokeUrl)
-                    .addHeader("Content-Type", "application/x-www-form-urlencoded")
-                    .build();
-            okhttp3.Response response = null;
-            response = getHttpClient().newCall(request2).execute();
-            if(response.code() != 500){
-                body = response.body().string();
-                Log.d("UI_resp_body", "response " + body);
-            }
-        } catch (Exception e) {
-            Log.d("HR_resp_error", "error " + e);
-        }
+        String body = genericGetHandler(invokeUrl);
         return body;
     }
 
     public String getStepCount(String userId){
         final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/stepCount/" + userId;
-        String body = "";
-        try {
-            okhttp3.Request request2 = new okhttp3.Request.Builder()
-                    .url(invokeUrl)
-                    .addHeader("Content-Type", "application/x-www-form-urlencoded")
-                    .build();
-            okhttp3.Response response = null;
-            response = getHttpClient().newCall(request2).execute();
-            if(response.code() != 500){
-                body = response.body().string();
-                Log.d("UI_resp_body", "response " + body);
-            }
-        } catch (Exception e) {
-            Log.d("SC_resp_error", "error " + e);
-        }
+        String body = genericGetHandler(invokeUrl);
         return body;
     }
 
     public String getUserInfo(String userId){
         final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/userInfo/" + userId;
+        String body = genericGetHandler(invokeUrl);
+        return body;
+    }
+
+    public String genericGetHandler(String invokeUrl){
         String body = "";
 
         try {
@@ -110,6 +87,7 @@ public class ApiGatewayHandler {
 
         return body;
     }
+
 
     public String postUserInfo(String userJson){
         final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/userInfo/";
