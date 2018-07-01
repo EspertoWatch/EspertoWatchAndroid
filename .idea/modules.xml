@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/EspertoWatchAndroid.iml" filepath="$PROJECT_DIR$/EspertoWatchAndroid.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/EspertoWatchAndroid.iml" filepath="$PROJECT_DIR$/.idea/EspertoWatchAndroid.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>

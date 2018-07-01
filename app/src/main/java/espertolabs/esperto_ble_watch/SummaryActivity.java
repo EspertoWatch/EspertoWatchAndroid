@@ -225,13 +225,12 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
                 } else {
-                    Toast.makeText(this, "Location permissions are required for Bluetooth scanning.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Location permissions are required for Bluetooth scanning", Toast.LENGTH_SHORT).show();
                     finish();
                 }
             }
         }
     }
-
     public void greetUser(){
         String greetText = "Welcome " + user.getName() + "!";
         messageUser.setText(greetText);

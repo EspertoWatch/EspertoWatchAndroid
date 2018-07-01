@@ -21,6 +21,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.widget.Toast;
 
 import com.amazonaws.AmazonWebServiceRequest;
 import com.amazonaws.ClientConfiguration;
@@ -247,9 +250,17 @@ public class LoginActivity extends AppCompatActivity {
 
     public void createAccount(View v){
         //TODO:: send intent to register activity
-        Intent registerUser = new Intent(v.getContext(), RegisterActivity.class);
-        startActivity(registerUser);
-        finish();
+        ConnectivityManager cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+
+        if (isConnected) {
+            Intent registerUser = new Intent(v.getContext(), RegisterActivity.class);
+            startActivity(registerUser);
+            finish();
+        } else {
+            Toast.makeText(this, "Connect to WiFi or data then please try again :)", Toast.LENGTH_SHORT).show();
+        }
     }
 }
-

@@ -38,7 +38,7 @@ public class BLEService extends Service {
 
     private final static String TAG = BLEService.class.getSimpleName();
 
-    private static final long SCAN_PERIOD = 10000;
+    private static final long SCAN_PERIOD = 30000;
     private Handler mHandler;
     private String filter; //TODO add
     private BluetoothLeScanner mBluetoothLeScanner;
@@ -302,14 +302,15 @@ public class BLEService extends Service {
             mHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    mBluetoothLeScanner.stopScan(mScanCallback); }
+                    mBluetoothLeScanner.stopScan(mScanCallback);
+                }
             }, SCAN_PERIOD);
 
             mBluetoothLeScanner.startScan(mScanCallback);
 
 
         } else {
-                mBluetoothLeScanner.stopScan(mScanCallback);
+            mBluetoothLeScanner.stopScan(mScanCallback);
         }
     }
 
@@ -351,9 +352,8 @@ public class BLEService extends Service {
     public boolean isEspertoWatch(String name)
     {
         //TODO::update with new BLE chip
-        String watch_name = getString(R.string.esperto_device_name);
-        if(name.equals(watch_name)) return true;
-        else return false;
+        String watchName = getString(R.string.esperto_device_name);
+        return name.equals(watchName);
     }
 
     public class LocalBinder extends Binder {

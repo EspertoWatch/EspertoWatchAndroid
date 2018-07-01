@@ -105,7 +105,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
 
         //Check whether BLE is supported
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            Toast.makeText(this, "Bluetooth LE is not supported.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Bluetooth LE is not supported on this device", Toast.LENGTH_SHORT).show();
             finish();
         }
 
@@ -193,8 +193,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         continuation.continueTask();
     }
 
-
-
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
@@ -202,7 +200,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
                 } else {
-                    Toast.makeText(this, "Location permissions are required for Bluetooth scanning.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Location permissions are required for Bluetooth scanning", Toast.LENGTH_SHORT).show();
                     finish();
                 }
             }
