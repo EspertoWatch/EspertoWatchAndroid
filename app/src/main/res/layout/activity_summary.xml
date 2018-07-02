@@ -33,7 +33,7 @@
 
     <TextView
         android:id="@+id/sectionTitle"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingStart="8dp"
         android:layout_marginTop="10dp"
@@ -75,7 +75,8 @@
         android:id="@+id/vf"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/sectionTitle">
+        app:layout_constraintTop_toBottomOf="@id/sectionTitle"
+        app:layout_constraintBottom_toTopOf="@id/bleConnection">
 
         <include android:id="@+id/include1" layout="@layout/summary" />
         <include android:id="@+id/include2" layout="@layout/heart_rate" />

@@ -251,6 +251,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             LineDataSet dataSet = new LineDataSet(entries, "Heart Rate"); // add entries to dataset
 
             dataSet.setDrawFilled(true);
+            dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
             if (Utils.getSDKInt() >= 18) {
                 // fill drawable only supported on api level 18 and above
                 Drawable drawable = ContextCompat.getDrawable(this, R.drawable.fade_red);
@@ -647,7 +648,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             @Override
             public void run() {
                 userHR.setCurrentHR(currentHr);
-                hr_current.setText(currentHr != 0 ? Integer.toString(userHR.getCurrentHR()) : "No Data");
+                hr_current.setText(currentHr != 0 ? Integer.toString(userHR.getCurrentHR()) + " BPM" : "No Data");
             }
         });
     }
@@ -657,7 +658,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             @Override
             public void run() {
                 userSteps.setCurrentSteps(currentSteps);
-                steps_current.setText(currentSteps != 0 ? Integer.toString(userSteps.getCurrentSteps()) : "No Data");
+                steps_current.setText(currentSteps != 0 ? Integer.toString(userSteps.getCurrentSteps()) + " steps" : "No Data");
             }
         });
     }
