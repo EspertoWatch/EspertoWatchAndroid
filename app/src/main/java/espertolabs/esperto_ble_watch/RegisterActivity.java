@@ -35,7 +35,8 @@ public class RegisterActivity extends AppCompatActivity {
     EditText passwordView;
     EditText passwordDupView;
     EditText usernameView;
-    String[] userInfo = new String[5]; //{firstname, lastname, username, password, goalPreference}
+//    String[] userInfo = new String[5]; //{firstname, lastname, username, password, goalPreference}
+    String[] userInfo = new String[4]; //{firstname, lastname, username, password}
     Button goalButton;
 
     @Override
@@ -46,7 +47,7 @@ public class RegisterActivity extends AppCompatActivity {
         //redirect to login after registration
         // Set up the login form.
         //TODO:: google AutoCompleteTextView
-        goalButton = (Button) findViewById(R.id.enterGoalSetting);
+//        goalButton = (Button) findViewById(R.id.enterGoalSetting);
         fNameView = (EditText) findViewById(R.id.first_name);
         lNameView = (EditText) findViewById(R.id.last_name);
         usernameView = (EditText) findViewById(R.id.username);
@@ -136,7 +137,6 @@ public class RegisterActivity extends AppCompatActivity {
 //        }
 //        //TODO:: add custom goal settings here - set initially to default
 //        else userInfo[4] = "DEFAULT";
-        userInfo[4] = "DEFAULT";
 
         return filled;
     }

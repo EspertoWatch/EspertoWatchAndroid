@@ -107,19 +107,19 @@
         app:layout_constraintTop_toBottomOf="@+id/password" />
 
 
-    <Button
-        android:id="@+id/enterGoalSetting"
-        style="@android:style/DeviceDefault.ButtonBar"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:onClick="updateGoalSetting"
-        android:text="@string/goal_setting"
-        android:textAlignment="center"
-        android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="@+id/password_dup"
-        app:layout_constraintStart_toStartOf="@+id/password_dup"
-        app:layout_constraintTop_toBottomOf="@+id/password_dup" />
+    <!--<Button-->
+        <!--android:id="@+id/enterGoalSetting"-->
+        <!--style="@android:style/DeviceDefault.ButtonBar"-->
+        <!--android:layout_width="0dp"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_marginTop="8dp"-->
+        <!--android:onClick="updateGoalSetting"-->
+        <!--android:text="@string/goal_setting"-->
+        <!--android:textAlignment="center"-->
+        <!--android:textSize="18sp"-->
+        <!--app:layout_constraintEnd_toEndOf="@+id/password_dup"-->
+        <!--app:layout_constraintStart_toStartOf="@+id/password_dup"-->
+        <!--app:layout_constraintTop_toBottomOf="@+id/password_dup" />-->
 
 
     <ImageView
