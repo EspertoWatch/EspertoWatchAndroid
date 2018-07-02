@@ -190,8 +190,13 @@ public class BLEService extends Service {
 
     //connect to Gatt server
     public boolean connect(final String address) {
-        if (mBluetoothAdapter == null || address == null) {
-            Log.w(TAG, "BluetoothAdapter not initialized or unspecified address.");
+        if (mBluetoothAdapter == null) {
+            Log.w(TAG, "BluetoothAdapter not initialized.");
+            return false;
+        }
+
+        if (address == null) {
+            Log.w(TAG, "Unspecified BLE address.");
             return false;
         }
 
@@ -279,6 +284,26 @@ public class BLEService extends Service {
         mBluetoothGatt.disconnect();
     }
 
+    public void scanFromSummary (boolean start) {
+        if (start == true) {
+            if (mBluetoothLeScanner == null) {
+                mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
+            }
+            mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    mBluetoothLeScanner.stopScan(mSummaryScanCallback);
+                }
+            }, 5000);
+
+            mBluetoothLeScanner.startScan(mSummaryScanCallback);
+        } else {
+            mBluetoothLeScanner.stopScan(mSummaryScanCallback);
+
+        }
+
+    }
+
     //returns device addresses, else returns null
     public void scanForDevices(boolean start, ImageButton btn, TextView txt) {
         if(start == true) {
@@ -346,6 +371,29 @@ public class BLEService extends Service {
                 }
             }
         };
+
+    private ScanCallback mSummaryScanCallback = new ScanCallback() {
+
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            super.onScanResult(callbackType, result);
+            ScanRecord record = result.getScanRecord();
+            String name;
+            if(record == null) return;
+            else{
+                name = record.getDeviceName();
+            }
+
+            if (name == null) {
+                Log.i("onScanResult", "scanned device name null");
+            } else {
+                if(isEspertoWatch(name)){
+                    Log.i("onScanResult", "Esperto watch found");
+                    scanFromSummary(false);
+                }
+            }
+        }
+    };
 
     //function to filter out force sensors
     public boolean isEspertoWatch(String name)

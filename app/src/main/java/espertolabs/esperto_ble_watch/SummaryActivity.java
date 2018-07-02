@@ -49,6 +49,9 @@ import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
 import com.github.mikephil.charting.utils.Utils;
 import com.google.gson.Gson;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -166,7 +169,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
         registerReceiver(mCallReceiver, new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED));
-        registerReceiver(mSMSReceiver, new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED));
+        registerReceiver(mSMSReceiver, new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION));
 
         SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("userId", Context.MODE_PRIVATE);
         userId = sharedPref.getString("USER_ID", "");
@@ -190,6 +193,9 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         greetUser();
         //TODO: for now we are just setting step/hr to 0 if no data
         //TODO: need to replace with some user friendly msg
+
+        //TODO: replace
+        user.setDeviceAddress("D4:49:8C:44:48:82");
     }
 
     @Override
@@ -373,8 +379,9 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             mBLEService = binder.getService();
             mServiceBound = true;
             if (mBLEService.initialize()) {
-//                mBLEService.connect(user.getDeviceAddress());
-                mBLEService.connect("D4:49:8C:44:48:82");
+                mBLEService.scanFromSummary(true);
+                mBLEService.connect(user.getDeviceAddress());
+
             }
         }
 
@@ -412,10 +419,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
                 bleConnection.setText("Watch disconnected\nLast connected at " + timeString);
                 bleConnection.setTextColor(Color.RED);
-                final Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
+                final Handler connectHandler = new Handler();
+                connectHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
+                        mBLEService.scanFromSummary(true);
                         mBLEService.connect(user.getDeviceAddress());
                     }
                 }, 5000);
@@ -521,7 +529,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
                 //Incoming call
                 String number = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER);
-                String callNumber = "C" + number;
+                String callNumber = "C" + number.substring(number.length()-10);
                 byte[] send = callNumber.getBytes(StandardCharsets.UTF_8);
                 mBLEService.writeRXCharacteristic(send);
 
@@ -534,35 +542,27 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String TAG = "Summary";
-            final String tag = TAG + ".onReceive";
+            final String tag = TAG + "mSMSReceiver";
             Bundle bundle = intent.getExtras();
             if (bundle == null) {
                 Log.w(tag, "BroadcastReceiver failed, no intent data to process.");
                 return;
             }
-            if (intent.getAction().equals(Telephony.Sms.Intents.SMS_RECEIVED_ACTION)) {
-                Log.d(tag, "SMS_RECEIVED");
+            Log.d(tag, "SMS_RECEIVED");
 
-                String smsOriginatingAddress;
+            String smsOriginatingAddress;
 
-                // You have to CHOOSE which code snippet to use NEW (KitKat+), or legacy
-                // Please comment out the for{} you don't want to use.
-
-                // API level 19 (KitKat 4.4) getMessagesFromIntent
-                for (SmsMessage message : Telephony.Sms.Intents.
-                        getMessagesFromIntent(intent)) {
-                    Log.d(tag, "KitKat or newer");
-                    if (message == null) {
-                        Log.e(tag, "SMS message is null -- ABORT");
-                        break;
-                    }
-                    smsOriginatingAddress = message.getDisplayOriginatingAddress();
-                    Log.d("originating address", smsOriginatingAddress);
-                    String msgNumber = "M" + smsOriginatingAddress;
-                    byte[] send = msgNumber.getBytes(StandardCharsets.UTF_8);
-                    mBLEService.writeRXCharacteristic(send);
-
+            for (SmsMessage message : Telephony.Sms.Intents.
+                    getMessagesFromIntent(intent)) {
+                if (message == null) {
+                    Log.e(tag, "SMS message is null -- ABORT");
+                    break;
                 }
+                smsOriginatingAddress = message.getDisplayOriginatingAddress();
+                Log.d("originating address", smsOriginatingAddress);
+                String msgNumber = "M" + smsOriginatingAddress.substring( smsOriginatingAddress.length()-10);
+                byte[] send = msgNumber.getBytes(StandardCharsets.UTF_8);
+                mBLEService.writeRXCharacteristic(send);
             }
         }
     };
@@ -600,13 +600,50 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
     //TODO:: add in with actual BLE watch
     public void storeHeartRate(int heartRate){
-        //store recent heart rate data into database
+        new Thread(new Runnable(){
+            @Override
+            public void run(){
+                JSONObject userJsonObject = new JSONObject();
+                try {
+                    userJsonObject.put("userId", userId);
+                    userJsonObject.put("currentHR", heartRate);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                String userJson = userJsonObject.toString();
+                String response = handler.postHeartRate(userJson);
+                Log.d("HR_post_response", response);
+
+                if(response != ""){
+                    Log.i("HR store", "success");
+                }
+            }
+        }).start();
     }
 
     //TODO:: add in with actual BLE watch
-    public void storeStepCount(int stepCount)
-    {
-        //store step count into database
+    public void storeStepCount(int stepCount) {
+        new Thread(new Runnable(){
+            @Override
+            public void run(){
+                JSONObject userJsonObject = new JSONObject();
+                try {
+                    userJsonObject.put("userId", userId);
+                    userJsonObject.put("currentHR", stepCount);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                String userJson = userJsonObject.toString();
+                String response = handler.postStepCount(userJson);
+                Log.d("StepCount_post_response", response);
+
+                if(response != ""){
+                    Log.i("Step count store", "success");
+                }
+            }
+        }).start();
     }
 
     /*
