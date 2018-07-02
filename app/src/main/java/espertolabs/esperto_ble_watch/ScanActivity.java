@@ -15,10 +15,12 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.ParcelUuid;
+import android.provider.Settings;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -111,6 +113,8 @@ public class ScanActivity extends AppCompatActivity implements Callback {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(new String[]{permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
+            // need location enabled for BLE scanning
+            locationStatusCheck();
         }
 
         userPool = new CognitoUserPool(getApplicationContext(),
@@ -119,9 +123,36 @@ public class ScanActivity extends AppCompatActivity implements Callback {
                                        getString(R.string.cognito_client_secret),
                                        Regions.fromName(getString(R.string.cognito_region)));
 
-        //check if Bluetooth is enabled
         Intent intent = new Intent(this, BLEService.class);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+    }
+
+
+    public void locationStatusCheck() {
+        final LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            buildAlertMessageNoGps();
+
+        }
+    }
+
+    private void buildAlertMessageNoGps() {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Your location to be disabled, do you want to enable it in order to search for an Esperto watch?")
+                .setCancelable(false)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    public void onClick(final DialogInterface dialog, final int id) {
+                        startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                    }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    public void onClick(final DialogInterface dialog, final int id) {
+                        dialog.cancel();
+                    }
+                });
+        final AlertDialog alert = builder.create();
+        alert.show();
     }
 
     SignUpHandler signUpCallback = new SignUpHandler() {
@@ -144,6 +175,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         }
         @Override
         public void onFailure(Exception exception) {
+            Log.e("Registration error:",exception.toString());
             alertFailure(getResources().getString(R.string.sign_up_error));
         }
     };
@@ -180,6 +212,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
 
         @Override
         public void onFailure(Exception exception) {
+            Log.e("Registration error:",exception.toString());
             alertFailure(getResources().getString(R.string.sign_up_error));
         }
         @Override
@@ -363,12 +396,12 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     public void displayDevice(BluetoothDevice device, ImageButton btn, TextView txt){
         //display device address
         String name = device.getName();
-        deviceAddr = device.getAddress();
         if(name == null) name = "unknown";
 
         //TODO:: modify for updated Esperto watch
         //update UI interface
         if(name.equals(watchName)){
+            deviceAddr = device.getAddress();
             //display icon
             btn.setVisibility(View.VISIBLE);
             txt.setText("Esperto watch found at:\n" + deviceAddr);
@@ -381,7 +414,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         //add to user account and send intent to login activity
         createAccounts(); //create user account with associated device address
     }
-
 
 }
 

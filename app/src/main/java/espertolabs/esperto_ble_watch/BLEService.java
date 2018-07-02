@@ -308,7 +308,6 @@ public class BLEService extends Service {
 
             mBluetoothLeScanner.startScan(mScanCallback);
 
-
         } else {
             mBluetoothLeScanner.stopScan(mScanCallback);
         }
@@ -342,7 +341,7 @@ public class BLEService extends Service {
                         caller.register(callBack, result.getDevice(), device, txt);
 
                         Log.d("DEBUG:", "Address:" + result.getDevice().getAddress());
-
+                        scanLeDevice(false, null,null);
                     }
                 }
             }

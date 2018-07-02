@@ -60,7 +60,6 @@ public class RegisterActivity extends AppCompatActivity {
         //checkMark.setVisibility(View.VISIBLE);
         //checkMark.animate().setDuration(shortAnimTime);
 
-
     }
 
     //public function call for unit testing
