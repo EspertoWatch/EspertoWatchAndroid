@@ -51,6 +51,8 @@ public class BLEService extends Service {
     private TextView deviceText;
     private String [] userData;
 
+    private Boolean deviceAlreadyFound = false;
+
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
@@ -357,7 +359,8 @@ public class BLEService extends Service {
                 if (name == null) {
                     Log.i("onScanResult", "scanned device name null");
                 } else {
-                    if(isEspertoWatch(name)){
+                    if(isEspertoWatch(name) && !deviceAlreadyFound){
+                        deviceAlreadyFound = true;
                         ImageButton device = deviceButton;
                         TextView txt = deviceText;
                         BLEService caller = new BLEService();
