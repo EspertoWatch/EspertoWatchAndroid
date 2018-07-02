@@ -104,9 +104,9 @@ public class WatchMan extends Service
 
         mNotifyManager = (NotificationManager) getApplicationContext().getSystemService(NOTIFICATION_SERVICE);
         mBuilder = new NotificationCompat.Builder(this, null);
-        mBuilder.setContentTitle("Insta Promo")
-                .setContentText("InstaPromo Service ready")
-                .setTicker("InstaPromo Service ready")
+        mBuilder.setContentTitle("Test")
+                .setContentText("test")
+                .setTicker("test")
                 .setPriority(Notification.PRIORITY_HIGH)
                 .setDefaults(Notification.DEFAULT_ALL)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
