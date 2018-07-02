@@ -1,42 +1,25 @@
 package espertolabs.esperto_ble_watch;
 
-import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
-import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanRecord;
-import android.bluetooth.le.ScanResult;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.location.LocationManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.ParcelUuid;
-import android.provider.Settings;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.Manifest.permission;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.mobile.client.AWSMobileClient;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoDevice;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUser;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserAttributes;
@@ -50,19 +33,12 @@ import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.Mult
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.AuthenticationHandler;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.GenericHandler;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.SignUpHandler;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBTable;
-import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.google.common.collect.Table;
 import com.google.gson.Gson;
 import com.skyfishjy.library.RippleBackground;
 
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
 import java.util.UUID;
 
@@ -79,7 +55,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     String[] userInfo;
     String watchName = "Esperto";
     String deviceAddr;
-    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 987;
     String uniqueId;
 
     CognitoUserPool userPool;
@@ -111,12 +86,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
             finish();
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(new String[]{permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
-            // need location enabled for BLE scanning
-            locationStatusCheck();
-        }
-
         userPool = new CognitoUserPool(getApplicationContext(),
                                        getString(R.string.cognito_userpool_id),
                                        getString(R.string.cognito_client_id),
@@ -125,34 +94,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
 
         Intent intent = new Intent(this, BLEService.class);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-    }
-
-
-    public void locationStatusCheck() {
-        final LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
-        if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            buildAlertMessageNoGps();
-
-        }
-    }
-
-    private void buildAlertMessageNoGps() {
-        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("Your location to be disabled, do you want to enable it in order to search for an Esperto watch?")
-                .setCancelable(false)
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    public void onClick(final DialogInterface dialog, final int id) {
-                        startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
-                    }
-                })
-                .setNegativeButton("No", new DialogInterface.OnClickListener() {
-                    public void onClick(final DialogInterface dialog, final int id) {
-                        dialog.cancel();
-                    }
-                });
-        final AlertDialog alert = builder.create();
-        alert.show();
     }
 
     SignUpHandler signUpCallback = new SignUpHandler() {
@@ -224,20 +165,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         AuthenticationDetails authenticationDetails = new AuthenticationDetails(userInfo[2], userInfo[3], null);
         continuation.setAuthenticationDetails(authenticationDetails);
         continuation.continueTask();
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSION_REQUEST_COARSE_LOCATION: {
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                } else {
-                    Toast.makeText(this, "Location permissions are required for Bluetooth scanning", Toast.LENGTH_SHORT).show();
-                    finish();
-                }
-            }
-        }
     }
 
     /**

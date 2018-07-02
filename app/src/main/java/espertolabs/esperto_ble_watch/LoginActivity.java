@@ -1,13 +1,16 @@
 package espertolabs.esperto_ble_watch;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -43,6 +46,7 @@ public class LoginActivity extends AppCompatActivity {
     CognitoUserPool userPool;
     private ApiGatewayHandler handler;
     Boolean hasAttemptedLogin = false;
+    int PERMISSION_ALL = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +79,28 @@ public class LoginActivity extends AppCompatActivity {
             Toast.makeText(this, "Bluetooth LE is not supported.", Toast.LENGTH_SHORT).show();
         }
 
+        String[] PERMISSIONS = {Manifest.permission.READ_PHONE_STATE,
+                                Manifest.permission.PROCESS_OUTGOING_CALLS,
+                                Manifest.permission.RECEIVE_SMS,
+                                Manifest.permission.READ_EXTERNAL_STORAGE,
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                                Manifest.permission.ACCESS_NETWORK_STATE};
+
+        if(!hasPermissions(this, PERMISSIONS)){
+            ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
+        }
+
+    }
+
+    public static boolean hasPermissions(Context context, String... permissions) {
+        if (context != null && permissions != null) {
+            for (String permission : permissions) {
+                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     @Override
