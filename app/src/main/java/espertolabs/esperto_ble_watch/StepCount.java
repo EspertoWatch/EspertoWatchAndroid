@@ -1,5 +1,6 @@
 package espertolabs.esperto_ble_watch;
 
+import java.util.HashMap;
 import java.util.Observable;
 import java.util.Set;
 
@@ -17,6 +18,10 @@ public class StepCount extends Observable{
     private String username;
     private int currentSteps;
     private Set<Integer> dailySteps;
+    private HashMap<String, Integer> totalDailySteps;
+
+    //totalDailySteps is what we will actually be using (since our dynamoDB tables use a hashmap)
+    //just keeping dailySteps cause all of the graphs currently depend on it
 
     //@DynamoDBHashKey(attributeName = "username")
     public String getUsername() {
@@ -45,6 +50,16 @@ public class StepCount extends Observable{
 
     public void setDailySteps(Set<Integer> dailySteps) {
         this.dailySteps = dailySteps;
+        setChanged();
+        notifyObservers();
+    }
+
+    public HashMap<String, Integer> getTotalDailySteps() {
+        return totalDailySteps;
+    }
+
+    public void setTotalDailySteps(HashMap<String, Integer> totalDailySteps) {
+        this.totalDailySteps = totalDailySteps;
         setChanged();
         notifyObservers();
     }

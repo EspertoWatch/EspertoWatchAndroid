@@ -102,7 +102,7 @@ public class ApiGatewayHandler {
     }
 
     public String postStepCount(String scJson){
-        final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/StepCount/";
+        final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/stepCount/";
         String body = genericPostHandler(invokeUrl, scJson);
         return body;
     }

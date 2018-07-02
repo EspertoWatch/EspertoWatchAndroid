@@ -18,8 +18,10 @@ public class HeartRate extends Observable{
     private String username;
     private int currentHR;
     private Set<Integer> dailyHR;
-    private HashMap<String, Integer> todayHR;
     private HashMap<String, Integer> avgDailyHR;
+
+    //avgDailyHR is what we will actually be using (since our dynamoDB tables use a hashmap)
+    //just keeping dailyHR cause all of the graphs currently depend on it
 
     //@DynamoDBHashKey(attributeName = "username")
     public String getUsername() {
@@ -48,16 +50,6 @@ public class HeartRate extends Observable{
 
     public void setDailyHR(Set<Integer> dailyHR) {
         this.dailyHR = dailyHR;
-        setChanged();
-        notifyObservers();
-    }
-
-    public HashMap<String, Integer> getTodayHR() {
-        return todayHR;
-    }
-
-    public void setTodayHR(HashMap<String, Integer> todayHR) {
-        this.todayHR = todayHR;
         setChanged();
         notifyObservers();
     }

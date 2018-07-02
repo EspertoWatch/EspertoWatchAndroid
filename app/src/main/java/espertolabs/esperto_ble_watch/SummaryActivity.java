@@ -630,7 +630,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 JSONObject userJsonObject = new JSONObject();
                 try {
                     userJsonObject.put("userId", userId);
-                    userJsonObject.put("currentHR", stepCount);
+                    userJsonObject.put("currentSteps", stepCount);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -686,9 +686,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 String response = handler.getStepCount(userId);
                 Gson g = new Gson();
                 if(response != ""){
-                    //StepCount sc = g.fromJson(response, StepCount.class);
-                    //TODO: ISSUE WITH GSON INVESTIGATE LATER
-                    userSteps.setCurrentSteps(10000);
+                    StepCount sc = g.fromJson(response, StepCount.class);
+                    userSteps.setCurrentSteps(sc.getCurrentSteps());
                 } else{
                     userSteps.setCurrentSteps(0);
                 }
