@@ -378,7 +378,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             if (mBLEService.initialize()) {
                 mBLEService.scanFromSummary(true);
                 mBLEService.connect(user.getDeviceAddress());
-
             }
         }
 
