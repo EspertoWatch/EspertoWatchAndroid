@@ -2,11 +2,9 @@ package espertolabs.esperto_ble_watch;
 
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
@@ -15,7 +13,6 @@ import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -83,6 +80,7 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         String[] PERMISSIONS = {Manifest.permission.READ_PHONE_STATE,
+                                Manifest.permission.READ_CALL_LOG,
                                 Manifest.permission.PROCESS_OUTGOING_CALLS,
                                 Manifest.permission.RECEIVE_SMS,
                                 Manifest.permission.READ_SMS,
@@ -93,45 +91,7 @@ public class LoginActivity extends AppCompatActivity {
         if(!hasPermissions(this, PERMISSIONS)){
             ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
         }
-
-        registerReceiver(mCallReceiver, new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED));
-
     }
-
-    private final BroadcastReceiver mCallReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getExtras() == null) {
-                Log.e("call receiver", "NULL intent");
-            }
-            String state = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
-            if (state == null) {
-
-                //Outgoing call
-                String number = intent.getStringExtra(Intent.EXTRA_PHONE_NUMBER);
-                Log.i("tag", "Outgoing number : " + number);
-
-            } else if (state.equals(TelephonyManager.EXTRA_STATE_OFFHOOK)) {
-
-                Log.i("tag", "EXTRA_STATE_OFFHOOK");
-
-            } else if (state.equals(TelephonyManager.EXTRA_STATE_IDLE)) {
-
-                Log.i("tag", "EXTRA_STATE_IDLE");
-
-            } else if (state.equals(TelephonyManager.EXTRA_STATE_RINGING)) {
-                Log.i("tag", "EXTRA_STATE_RINGING");
-                //Incoming call
-                String number = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER);
-                if (number != null) {
-                    Log.d("incoming call", number);
-                } else {
-                    Log.d("incoming call", "NULL number");
-                }
-            } else
-                Log.i("tag", "none");
-        }
-    };
 
     public static boolean hasPermissions(Context context, String... permissions) {
         if (context != null && permissions != null) {

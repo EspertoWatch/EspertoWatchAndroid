@@ -193,9 +193,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         greetUser();
         //TODO: for now we are just setting step/hr to 0 if no data
         //TODO: need to replace with some user friendly msg
-
-        //TODO: replace
-        user.setDeviceAddress("D4:49:8C:44:48:82");
     }
 
     @Override
@@ -529,9 +526,13 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
                 //Incoming call
                 String number = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER);
-                String callNumber = "C" + number.substring(number.length()-10);
-                byte[] send = callNumber.getBytes(StandardCharsets.UTF_8);
-                mBLEService.writeRXCharacteristic(send);
+                if (number != null) {
+                   String callNumber = "C" + number.substring(number.length()-10);
+                    byte[] send = callNumber.getBytes(StandardCharsets.UTF_8);
+                    mBLEService.writeRXCharacteristic(send);
+                } else {
+                    Log.d("incoming call", "NULL number");
+                }
 
             } else
                 Log.i("tag", "none");

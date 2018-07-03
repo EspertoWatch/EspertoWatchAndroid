@@ -36,6 +36,8 @@ public class BLEService extends Service {
 
     }
 
+    public String deviceAddress;
+
     private final static String TAG = BLEService.class.getSimpleName();
 
     private static final long SCAN_PERIOD = 30000;
@@ -369,6 +371,7 @@ public class BLEService extends Service {
                         caller.register(callBack, result.getDevice(), device, txt);
 
                         Log.d("DEBUG:", "Address:" + result.getDevice().getAddress());
+                        deviceAddress = result.getDevice().getAddress();
                         scanLeDevice(false, null,null);
                     }
                 }

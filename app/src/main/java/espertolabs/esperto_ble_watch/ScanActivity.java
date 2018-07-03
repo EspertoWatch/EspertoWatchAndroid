@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -54,7 +55,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     Button submitButton;
     String[] userInfo;
     String watchName = "Esperto";
-    String deviceAddr;
     String uniqueId;
 
     CognitoUserPool userPool;
@@ -190,7 +190,14 @@ public class ScanActivity extends AppCompatActivity implements Callback {
                     userJsonObject.put("userId", userId);
                     userJsonObject.put("name", userInfo[0] + " " + userInfo[1]);
                     //NOTE: NEED TO MODIFY FUNCTION ON BACKEND TO ENSURE THAT DEVICE ADDR GETS POSTED
-                    userJsonObject.put("deviceAddr", deviceAddr);
+                    SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("deviceInfo", Context.MODE_PRIVATE);
+                    String deviceAddr = mBLEService.deviceAddress;
+                    if (deviceAddr != null) {
+                        Log.i("DEVICE ADDR TO POST", deviceAddr);
+                        userJsonObject.put("deviceAddress", deviceAddr);
+                    } else {
+                        Log.e("Account creation error:", "no device address");
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -328,7 +335,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         //TODO:: modify for updated Esperto watch
         //update UI interface
         if(name.equals(watchName)){
-            deviceAddr = device.getAddress();
+            String deviceAddr = device.getAddress();
             //display icon
             btn.setVisibility(View.VISIBLE);
             txt.setText("Esperto watch found at:\n" + deviceAddr);
