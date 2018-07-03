@@ -76,7 +76,7 @@ public class LoginActivity extends AppCompatActivity {
                 mBluetoothAdapter.enable();
             }
         } else {
-            Toast.makeText(this, "Bluetooth LE is not supported.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.ble_not_supported), Toast.LENGTH_SHORT).show();
         }
 
         String[] PERMISSIONS = {Manifest.permission.READ_PHONE_STATE,
@@ -239,7 +239,7 @@ public class LoginActivity extends AppCompatActivity {
             startActivity(registerUser);
             finish();
         } else {
-            Toast.makeText(this, "Connect to WiFi or data then please try again :)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.internet_required), Toast.LENGTH_SHORT).show();
         }
     }
 }

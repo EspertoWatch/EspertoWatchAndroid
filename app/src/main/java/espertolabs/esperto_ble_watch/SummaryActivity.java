@@ -155,7 +155,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
         //Check whether BLE is supported
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            Toast.makeText(this, "Bluetooth LE is not supported.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.ble_not_supported), Toast.LENGTH_SHORT).show();
             finish();
         }
 
@@ -202,7 +202,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
                 } else {
-                    Toast.makeText(this, "Location permissions are required for Bluetooth scanning", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getString(R.string.location_requirec), Toast.LENGTH_SHORT).show();
                     finish();
                 }
             }
@@ -406,7 +406,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             } else if (BLEService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 Log.i("Update", "Device disconnected");
                 mConnected = false;
-                Toast.makeText(getApplicationContext(), "Esperto Watch disconnected. ", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), getString(R.string.watch_disconnected), Toast.LENGTH_SHORT).show();
                 invalidateOptionsMenu();
 
                 Date now = new Date();

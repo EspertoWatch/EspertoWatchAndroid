@@ -72,7 +72,7 @@ public class RegisterActivity extends AppCompatActivity {
 
     private void buildAlertMessageNoGps() {
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("Your location is disabled, do you want to enable it in order to search for an Esperto watch?")
+        builder.setMessage(getString(R.string.enable_location))
                 .setCancelable(false)
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     public void onClick(final DialogInterface dialog, final int id) {
@@ -95,7 +95,7 @@ public class RegisterActivity extends AppCompatActivity {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
                 } else {
-                    Toast.makeText(this, "Location permissions are required for Bluetooth scanning", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getString(R.string.enable_location), Toast.LENGTH_SHORT).show();
                     finish();
                 }
             }
