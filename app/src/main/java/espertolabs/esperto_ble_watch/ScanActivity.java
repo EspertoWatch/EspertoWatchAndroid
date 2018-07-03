@@ -1,13 +1,6 @@
 package espertolabs.esperto_ble_watch;
 
-import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
-import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanRecord;
-import android.bluetooth.le.ScanResult;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -15,26 +8,19 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.ParcelUuid;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.Manifest.permission;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.mobile.client.AWSMobileClient;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoDevice;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUser;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserAttributes;
@@ -48,19 +34,12 @@ import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.Mult
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.AuthenticationHandler;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.GenericHandler;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.SignUpHandler;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBTable;
-import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.google.common.collect.Table;
 import com.google.gson.Gson;
 import com.skyfishjy.library.RippleBackground;
 
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
 import java.util.UUID;
 
@@ -76,8 +55,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     Button submitButton;
     String[] userInfo;
     String watchName = "Esperto";
-    String deviceAddr;
-    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 987;
     String uniqueId;
 
     CognitoUserPool userPool;
@@ -105,12 +82,8 @@ public class ScanActivity extends AppCompatActivity implements Callback {
 
         //Check whether BLE is supported
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            Toast.makeText(this, "Bluetooth LE is not supported.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.ble_not_supported), Toast.LENGTH_SHORT).show();
             finish();
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(new String[]{permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
         }
 
         userPool = new CognitoUserPool(getApplicationContext(),
@@ -119,7 +92,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
                                        getString(R.string.cognito_client_secret),
                                        Regions.fromName(getString(R.string.cognito_region)));
 
-        //check if Bluetooth is enabled
         Intent intent = new Intent(this, BLEService.class);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
     }
@@ -144,6 +116,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         }
         @Override
         public void onFailure(Exception exception) {
+            Log.e("Registration error:",exception.toString());
             alertFailure(getResources().getString(R.string.sign_up_error));
         }
     };
@@ -180,6 +153,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
 
         @Override
         public void onFailure(Exception exception) {
+            Log.e("Registration error:",exception.toString());
             alertFailure(getResources().getString(R.string.sign_up_error));
         }
         @Override
@@ -191,22 +165,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         AuthenticationDetails authenticationDetails = new AuthenticationDetails(userInfo[2], userInfo[3], null);
         continuation.setAuthenticationDetails(authenticationDetails);
         continuation.continueTask();
-    }
-
-
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSION_REQUEST_COARSE_LOCATION: {
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                } else {
-                    Toast.makeText(this, "Location permissions are required for Bluetooth scanning.", Toast.LENGTH_SHORT).show();
-                    finish();
-                }
-            }
-        }
     }
 
     /**
@@ -232,7 +190,14 @@ public class ScanActivity extends AppCompatActivity implements Callback {
                     userJsonObject.put("userId", userId);
                     userJsonObject.put("name", userInfo[0] + " " + userInfo[1]);
                     //NOTE: NEED TO MODIFY FUNCTION ON BACKEND TO ENSURE THAT DEVICE ADDR GETS POSTED
-                    userJsonObject.put("deviceAddr", deviceAddr);
+                    SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("deviceInfo", Context.MODE_PRIVATE);
+                    String deviceAddr = mBLEService.deviceAddress;
+                    if (deviceAddr != null) {
+                        Log.i("DEVICE ADDR TO POST", deviceAddr);
+                        userJsonObject.put("deviceAddress", deviceAddr);
+                    } else {
+                        Log.e("Account creation error:", "no device address");
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -365,12 +330,12 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     public void displayDevice(BluetoothDevice device, ImageButton btn, TextView txt){
         //display device address
         String name = device.getName();
-        deviceAddr = device.getAddress();
         if(name == null) name = "unknown";
 
         //TODO:: modify for updated Esperto watch
         //update UI interface
         if(name.equals(watchName)){
+            String deviceAddr = device.getAddress();
             //display icon
             btn.setVisibility(View.VISIBLE);
             txt.setText("Esperto watch found at:\n" + deviceAddr);
@@ -383,7 +348,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
         //add to user account and send intent to login activity
         createAccounts(); //create user account with associated device address
     }
-
 
 }
 

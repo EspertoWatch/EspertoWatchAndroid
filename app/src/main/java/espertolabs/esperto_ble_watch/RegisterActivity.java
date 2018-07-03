@@ -1,30 +1,22 @@
 package espertolabs.esperto_ble_watch;
 
-import android.app.Dialog;
-import android.os.Parcelable;
-import android.support.v4.app.DialogFragment;
+import android.Manifest;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
+import android.content.pm.PackageManager;
+import android.location.LocationManager;
+import android.os.Build;
+import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-
-import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
-
-import com.skyfishjy.library.RippleBackground;
-
-import java.io.Serializable;
+import android.widget.Toast;
 
 /**
  * A screen for user registration
@@ -35,8 +27,10 @@ public class RegisterActivity extends AppCompatActivity {
     EditText passwordView;
     EditText passwordDupView;
     EditText usernameView;
-    String[] userInfo = new String[5]; //{firstname, lastname, username, password, goalPreference}
+//    String[] userInfo = new String[5]; //{firstname, lastname, username, password, goalPreference}
+    String[] userInfo = new String[4]; //{firstname, lastname, username, password}
     Button goalButton;
+    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 987;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +40,7 @@ public class RegisterActivity extends AppCompatActivity {
         //redirect to login after registration
         // Set up the login form.
         //TODO:: google AutoCompleteTextView
-        goalButton = (Button) findViewById(R.id.enterGoalSetting);
+//        goalButton = (Button) findViewById(R.id.enterGoalSetting);
         fNameView = (EditText) findViewById(R.id.first_name);
         lNameView = (EditText) findViewById(R.id.last_name);
         usernameView = (EditText) findViewById(R.id.username);
@@ -59,7 +53,53 @@ public class RegisterActivity extends AppCompatActivity {
         //checkMark.setVisibility(View.VISIBLE);
         //checkMark.animate().setDuration(shortAnimTime);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
+            // need location enabled for BLE scanning
+            locationStatusCheck();
+        }
 
+    }
+
+    public void locationStatusCheck() {
+        final LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            buildAlertMessageNoGps();
+
+        }
+    }
+
+    private void buildAlertMessageNoGps() {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(getString(R.string.enable_location))
+                .setCancelable(false)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    public void onClick(final DialogInterface dialog, final int id) {
+                        startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                    }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    public void onClick(final DialogInterface dialog, final int id) {
+                        dialog.cancel();
+                    }
+                });
+        final AlertDialog alert = builder.create();
+        alert.show();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_COARSE_LOCATION: {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                } else {
+                    Toast.makeText(this, getString(R.string.enable_location), Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+            }
+        }
     }
 
     //public function call for unit testing
@@ -136,7 +176,6 @@ public class RegisterActivity extends AppCompatActivity {
 //        }
 //        //TODO:: add custom goal settings here - set initially to default
 //        else userInfo[4] = "DEFAULT";
-        userInfo[4] = "DEFAULT";
 
         return filled;
     }

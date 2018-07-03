@@ -36,9 +36,11 @@ public class BLEService extends Service {
 
     }
 
+    public String deviceAddress;
+
     private final static String TAG = BLEService.class.getSimpleName();
 
-    private static final long SCAN_PERIOD = 10000;
+    private static final long SCAN_PERIOD = 30000;
     private Handler mHandler;
     private String filter; //TODO add
     private BluetoothLeScanner mBluetoothLeScanner;
@@ -50,6 +52,8 @@ public class BLEService extends Service {
     private ImageButton deviceButton;
     private TextView deviceText;
     private String [] userData;
+
+    private Boolean deviceAlreadyFound = false;
 
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
@@ -190,8 +194,13 @@ public class BLEService extends Service {
 
     //connect to Gatt server
     public boolean connect(final String address) {
-        if (mBluetoothAdapter == null || address == null) {
-            Log.w(TAG, "BluetoothAdapter not initialized or unspecified address.");
+        if (mBluetoothAdapter == null) {
+            Log.w(TAG, "BluetoothAdapter not initialized.");
+            return false;
+        }
+
+        if (address == null) {
+            Log.w(TAG, "Unspecified BLE address.");
             return false;
         }
 
@@ -279,6 +288,26 @@ public class BLEService extends Service {
         mBluetoothGatt.disconnect();
     }
 
+    public void scanFromSummary (boolean start) {
+        if (start == true) {
+            if (mBluetoothLeScanner == null) {
+                mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
+            }
+            mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    mBluetoothLeScanner.stopScan(mSummaryScanCallback);
+                }
+            }, 5000);
+
+            mBluetoothLeScanner.startScan(mSummaryScanCallback);
+        } else {
+            mBluetoothLeScanner.stopScan(mSummaryScanCallback);
+
+        }
+
+    }
+
     //returns device addresses, else returns null
     public void scanForDevices(boolean start, ImageButton btn, TextView txt) {
         if(start == true) {
@@ -302,14 +331,14 @@ public class BLEService extends Service {
             mHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    mBluetoothLeScanner.stopScan(mScanCallback); }
+                    mBluetoothLeScanner.stopScan(mScanCallback);
+                }
             }, SCAN_PERIOD);
 
             mBluetoothLeScanner.startScan(mScanCallback);
 
-
         } else {
-                mBluetoothLeScanner.stopScan(mScanCallback);
+            mBluetoothLeScanner.stopScan(mScanCallback);
         }
     }
 
@@ -332,7 +361,8 @@ public class BLEService extends Service {
                 if (name == null) {
                     Log.i("onScanResult", "scanned device name null");
                 } else {
-                    if(isEspertoWatch(name)){
+                    if(isEspertoWatch(name) && !deviceAlreadyFound){
+                        deviceAlreadyFound = true;
                         ImageButton device = deviceButton;
                         TextView txt = deviceText;
                         BLEService caller = new BLEService();
@@ -341,19 +371,42 @@ public class BLEService extends Service {
                         caller.register(callBack, result.getDevice(), device, txt);
 
                         Log.d("DEBUG:", "Address:" + result.getDevice().getAddress());
-
+                        deviceAddress = result.getDevice().getAddress();
+                        scanLeDevice(false, null,null);
                     }
                 }
             }
         };
 
+    private ScanCallback mSummaryScanCallback = new ScanCallback() {
+
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            super.onScanResult(callbackType, result);
+            ScanRecord record = result.getScanRecord();
+            String name;
+            if(record == null) return;
+            else{
+                name = record.getDeviceName();
+            }
+
+            if (name == null) {
+                Log.i("onScanResult", "scanned device name null");
+            } else {
+                if(isEspertoWatch(name)){
+                    Log.i("onScanResult", "Esperto watch found");
+                    scanFromSummary(false);
+                }
+            }
+        }
+    };
+
     //function to filter out force sensors
     public boolean isEspertoWatch(String name)
     {
         //TODO::update with new BLE chip
-        String watch_name = getString(R.string.esperto_device_name);
-        if(name.equals(watch_name)) return true;
-        else return false;
+        String watchName = getString(R.string.esperto_device_name);
+        return name.equals(watchName);
     }
 
     public class LocalBinder extends Binder {

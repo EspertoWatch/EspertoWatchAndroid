@@ -25,12 +25,16 @@
     <string name="try_again">Incorrect username or password, please try again :)</string>
     <string name="sign_up_error">We could not create your account, please try again :)</string>
     <string name="wrong_confirmation_code">You have entered the wrong code, please try again. :)</string>
+    <string name="internet_required">Connect to WiFi or data then please try again :)</string>
+    <string name="enable_location">Your location is disabled, do you want to enable it in order to search for an Esperto watch?</string>
+    <string name="location_requirec">Location permissions are required for Bluetooth scanning</string>
+    <string name="ble_not_supported">Bluetooth LE is not supported on this device</string>
+    <string name="watch_disconnected">Esperto Watch disconnected</string>
     <string name="ok">OK</string>
 
     <!-- Strings related to Register activity-->
     <string name="default_setting">Default Setting</string>
     <string name="goal_setting">Choose Goal Setting</string>
-
 
     <!-- Strings related to Summary Activity -->
     <string name="title_heart">Heart Rate</string>

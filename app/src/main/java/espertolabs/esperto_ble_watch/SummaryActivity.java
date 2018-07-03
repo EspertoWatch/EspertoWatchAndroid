@@ -6,7 +6,6 @@ import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -18,40 +17,26 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
 import android.provider.Telephony;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.telephony.PhoneStateListener;
 import android.telephony.SmsMessage;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.mobile.client.AWSMobileClient;
-import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUser;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserPool;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBQueryExpression;
-import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.BarData;
@@ -61,29 +46,21 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
-import com.github.mikephil.charting.utils.ColorTemplate;
 import com.github.mikephil.charting.utils.Utils;
-import com.google.android.gms.auth.api.phone.SmsRetriever;
-import com.google.android.gms.common.api.CommonStatusCodes;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.common.data.DataBufferObserver;
-import com.google.common.base.Utf8;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Date;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
 
@@ -181,7 +158,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
         //Check whether BLE is supported
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            Toast.makeText(this, "Bluetooth LE is not supported.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.ble_not_supported), Toast.LENGTH_SHORT).show();
             finish();
         }
 
@@ -195,7 +172,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
         registerReceiver(mCallReceiver, new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED));
-        registerReceiver(mSMSReceiver, new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED));
+        registerReceiver(mSMSReceiver, new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION));
 
         SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("userId", Context.MODE_PRIVATE);
         userId = sharedPref.getString("USER_ID", "");
@@ -228,13 +205,12 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
                 } else {
-                    Toast.makeText(this, "Location permissions are required for Bluetooth scanning.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getString(R.string.location_requirec), Toast.LENGTH_SHORT).show();
                     finish();
                 }
             }
         }
     }
-
     public void greetUser(){
         String greetText = "Welcome " + user.getName() + "!";
         messageUser.setText(greetText);
@@ -386,6 +362,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             mBLEService = binder.getService();
             mServiceBound = true;
             if (mBLEService.initialize()) {
+                mBLEService.scanFromSummary(true);
                 mBLEService.connect(user.getDeviceAddress());
             }
         }
@@ -414,7 +391,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             } else if (BLEService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 Log.i("Update", "Device disconnected");
                 mConnected = false;
-                Toast.makeText(getApplicationContext(), "Esperto Watch disconnected. ", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), getString(R.string.watch_disconnected), Toast.LENGTH_SHORT).show();
                 invalidateOptionsMenu();
 
                 Date now = new Date();
@@ -424,10 +401,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
                 bleConnection.setText("Watch disconnected\nLast connected at " + timeString);
                 bleConnection.setTextColor(Color.RED);
-                final Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
+                final Handler connectHandler = new Handler();
+                connectHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
+                        mBLEService.scanFromSummary(true);
                         mBLEService.connect(user.getDeviceAddress());
                     }
                 }, 5000);
@@ -533,9 +511,13 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
                 //Incoming call
                 String number = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER);
-                String callNumber = "C" + number;
-                byte[] send = callNumber.getBytes(StandardCharsets.UTF_8);
-                mBLEService.writeRXCharacteristic(send);
+                if (number != null) {
+                   String callNumber = "C" + number.substring(number.length()-10);
+                    byte[] send = callNumber.getBytes(StandardCharsets.UTF_8);
+                    mBLEService.writeRXCharacteristic(send);
+                } else {
+                    Log.d("incoming call", "NULL number");
+                }
 
             } else
                 Log.i("tag", "none");
@@ -546,35 +528,27 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String TAG = "Summary";
-            final String tag = TAG + ".onReceive";
+            final String tag = TAG + "mSMSReceiver";
             Bundle bundle = intent.getExtras();
             if (bundle == null) {
                 Log.w(tag, "BroadcastReceiver failed, no intent data to process.");
                 return;
             }
-            if (intent.getAction().equals(Telephony.Sms.Intents.SMS_RECEIVED_ACTION)) {
-                Log.d(tag, "SMS_RECEIVED");
+            Log.d(tag, "SMS_RECEIVED");
 
-                String smsOriginatingAddress;
+            String smsOriginatingAddress;
 
-                // You have to CHOOSE which code snippet to use NEW (KitKat+), or legacy
-                // Please comment out the for{} you don't want to use.
-
-                // API level 19 (KitKat 4.4) getMessagesFromIntent
-                for (SmsMessage message : Telephony.Sms.Intents.
-                        getMessagesFromIntent(intent)) {
-                    Log.d(tag, "KitKat or newer");
-                    if (message == null) {
-                        Log.e(tag, "SMS message is null -- ABORT");
-                        break;
-                    }
-                    smsOriginatingAddress = message.getDisplayOriginatingAddress();
-                    Log.d("originating address", smsOriginatingAddress);
-                    String msgNumber = "M" + smsOriginatingAddress;
-                    byte[] send = msgNumber.getBytes(StandardCharsets.UTF_8);
-                    mBLEService.writeRXCharacteristic(send);
-
+            for (SmsMessage message : Telephony.Sms.Intents.
+                    getMessagesFromIntent(intent)) {
+                if (message == null) {
+                    Log.e(tag, "SMS message is null -- ABORT");
+                    break;
                 }
+                smsOriginatingAddress = message.getDisplayOriginatingAddress();
+                Log.d("originating address", smsOriginatingAddress);
+                String msgNumber = "M" + smsOriginatingAddress.substring( smsOriginatingAddress.length()-10);
+                byte[] send = msgNumber.getBytes(StandardCharsets.UTF_8);
+                mBLEService.writeRXCharacteristic(send);
             }
         }
     };
@@ -612,13 +586,50 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
     //TODO:: add in with actual BLE watch
     public void storeHeartRate(int heartRate){
-        //store recent heart rate data into database
+        new Thread(new Runnable(){
+            @Override
+            public void run(){
+                JSONObject userJsonObject = new JSONObject();
+                try {
+                    userJsonObject.put("userId", userId);
+                    userJsonObject.put("currentHR", heartRate);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                String userJson = userJsonObject.toString();
+                String response = handler.postHeartRate(userJson);
+                Log.d("HR_post_response", response);
+
+                if(response != ""){
+                    Log.i("HR store", "success");
+                }
+            }
+        }).start();
     }
 
     //TODO:: add in with actual BLE watch
-    public void storeStepCount(int stepCount)
-    {
-        //store step count into database
+    public void storeStepCount(int stepCount) {
+        new Thread(new Runnable(){
+            @Override
+            public void run(){
+                JSONObject userJsonObject = new JSONObject();
+                try {
+                    userJsonObject.put("userId", userId);
+                    userJsonObject.put("currentSteps", stepCount);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                String userJson = userJsonObject.toString();
+                String response = handler.postStepCount(userJson);
+                Log.d("StepCount_post_response", response);
+
+                if(response != ""){
+                    Log.i("Step count store", "success");
+                }
+            }
+        }).start();
     }
 
     private void getHRDB(){
@@ -672,9 +683,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 String response = handler.getStepCount(userId);
                 Gson g = new Gson();
                 if(response != ""){
-                    //StepCount sc = g.fromJson(response, StepCount.class);
-                    //TODO: ISSUE WITH GSON INVESTIGATE LATER
-                    updateStepsUI(10000);
+                    StepCount sc = g.fromJson(response, StepCount.class);
+                    userSteps.setCurrentSteps(sc.getCurrentSteps());
                 } else{
                     updateStepsUI(0);
                 }
