@@ -119,6 +119,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     //Summary values
     TextView hr_current;
     TextView steps_current;
+    TextView section_title;
 
     //instantiate api gateway handler
     final ApiGatewayHandler handler = new ApiGatewayHandler();
@@ -131,7 +132,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             switch (item.getItemId()) {
                 case R.id.navigation_profile:
-                    displaySummary();
+                    flipper.setDisplayedChild(3);
+                    section_title.setText("Current Heart Rate and Step Count");
                     summaryDisplay = true;
                     detailedHeart = false;
                     detailedStep = false;
@@ -171,6 +173,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         flipper = (ViewFlipper)findViewById(R.id.vf);
         hr_current = (TextView) findViewById(R.id.heartRateNum);
         steps_current = (TextView) findViewById(R.id.stepCount);
+        section_title = (TextView) findViewById(R.id.sectionTitle);
 
         mTextMessage = (TextView) findViewById(R.id.message);
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
@@ -238,32 +241,17 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     }
 
     //TODO:: add a loading screen to keep user occupied before data display
-    private void displaySummary(){
-        flipper.setDisplayedChild(3);
-        //using default goals for now
-
-        //NOT SURE WHY WE ARE SETTING STUFF TO ZERO IF WE HAVE NO LT DATA
-        /*
-        if(userHR.getUsername() == null || userSteps.getUsername() == null){
-            Log.i("Fail", "user has no long term data");
-            hr_current.setText("0");
-            steps_current.setText("0");
-            return; //just displaying random stand in data if not long term user
-        }
-        */
-
-        hr_current.setText(Integer.toString(userHR.getCurrentHR()));
-        steps_current.setText(Integer.toString(userSteps.getCurrentSteps()));
-    }
 
     private void displayHeart(){
         flipper.setDisplayedChild(1);
-        if(userHR.getUsername() != null){
+        section_title.setText("Average Heart Rate (Last 30 Days)");
+        if(userHR.getDailyHR() != null){
 
             List<Entry> entries = retrieveHeartRateData();
             LineDataSet dataSet = new LineDataSet(entries, "Heart Rate"); // add entries to dataset
 
             dataSet.setDrawFilled(true);
+            dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
             if (Utils.getSDKInt() >= 18) {
                 // fill drawable only supported on api level 18 and above
                 Drawable drawable = ContextCompat.getDrawable(this, R.drawable.fade_red);
@@ -289,8 +277,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
             heartChart.setData(lineData);
             heartChart.invalidate(); // refresh
-
-
         }
     }
 
@@ -313,7 +299,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     //TODO:: adjust color of graph if goal achieved
     private void displaySteps(){
         flipper.setDisplayedChild(2);
-//        if(!user.getUsername().equals("mmacmahon")){return;}
+        section_title.setText("Daily Step Count (Last 30 Days)");
         BarDataSet dataSet = retrieveStepData();
         ArrayList<IBarDataSet> dataSets = new ArrayList<IBarDataSet>();
         dataSet.setColors(getResources().getColor(R.color.navbar));
@@ -635,15 +621,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         //store step count into database
     }
 
-    /*
-    @Override
-    public void onBackPressed() {
-        Intent login = new Intent(getApplicationContext(), LoginActivity.class);
-        startActivity(login);
-        finish();
-    }
-    */
-
     private void getHRDB(){
         //query database for heart data
         new Thread(new Runnable() {
@@ -654,9 +631,9 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 Gson g = new Gson();
                 if(response != ""){
                     HeartRate hr = g.fromJson(response, HeartRate.class);
-                    userHR.setCurrentHR(hr.getCurrentHR());
+                    updateHeartUI(hr.getCurrentHR());
                 } else{
-                    userHR.setCurrentHR(0);
+                    updateHeartUI(0);
                 }
                 //insert fake dailyHR vals for now
                 //insert some fake vals for now
@@ -664,6 +641,26 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 userHR.setDailyHR(dailyHR);
             }
         }).start();
+    }
+
+    private void updateHeartUI(Integer currentHr){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                userHR.setCurrentHR(currentHr);
+                hr_current.setText(currentHr != 0 ? Integer.toString(userHR.getCurrentHR()) + " BPM" : "No Data");
+            }
+        });
+    }
+
+    private void updateStepsUI(Integer currentSteps){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                userSteps.setCurrentSteps(currentSteps);
+                steps_current.setText(currentSteps != 0 ? Integer.toString(userSteps.getCurrentSteps()) + " steps" : "No Data");
+            }
+        });
     }
 
     private void getStepDB(){
@@ -677,9 +674,9 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 if(response != ""){
                     //StepCount sc = g.fromJson(response, StepCount.class);
                     //TODO: ISSUE WITH GSON INVESTIGATE LATER
-                    userSteps.setCurrentSteps(10000);
+                    updateStepsUI(10000);
                 } else{
-                    userSteps.setCurrentSteps(0);
+                    updateStepsUI(0);
                 }
 
                 //insert some fake vals for now
