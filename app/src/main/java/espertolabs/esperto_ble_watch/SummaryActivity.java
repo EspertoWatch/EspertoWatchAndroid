@@ -444,14 +444,13 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 // Send updated time and date every time summary is opened
                 Date now = new Date();
 
-                SimpleDateFormat ft = new SimpleDateFormat ("hh:mm:ssa");
+                SimpleDateFormat ft = new SimpleDateFormat ("HH:mm:ss");
                 String timeString = ft.format(now);
                 byte[] send = timeString.getBytes(StandardCharsets.UTF_8);
                 mBLEService.writeRXCharacteristic(send);
 
                 ft = new SimpleDateFormat ("dd/MM/YYYY");
                 timeString = ft.format(now);
-                timeString = "D" + timeString;
                 send = timeString.getBytes(StandardCharsets.UTF_8);
                 mBLEService.writeRXCharacteristic(send);
             } else if (BLEService.ACTION_DATA_AVAILABLE.equals(action)) {
