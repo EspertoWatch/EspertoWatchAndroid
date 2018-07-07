@@ -54,7 +54,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     EditText confirmationCode;
     Button submitButton;
     String[] userInfo;
-    String watchName = "Esperto";
+    String watchName;
     String uniqueId;
 
     CognitoUserPool userPool;

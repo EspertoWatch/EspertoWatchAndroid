@@ -45,7 +45,7 @@
     <string name="connected">connected</string>
     <string name="connecting">connected</string>
     <string name="main_user">mmacmahon</string>
-    <string name="esperto_device_name">Esperto</string>
+    <string name="esperto_device_name">Esperto Watch</string>
 
     <!-- Strings related to Cognito -->
     <string name="cognito_web_domain">esperto-watch-app.auth.us-east-1.amazoncognito.com</string>
