@@ -561,11 +561,13 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     @Override
     protected void onDestroy(){
         super.onDestroy();
+        mBLEService.disconnect();
         unregisterReceiver(mGattUpdateReceiver);
         unregisterReceiver(mCallReceiver);
         unregisterReceiver(mSMSReceiver);
         unbindService(mConnection);
     }
+
     @Override
     protected void onResume(){
         super.onResume();
@@ -716,8 +718,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 getString(R.string.cognito_client_secret),
                 Regions.fromName(getString(R.string.cognito_region)));
         userPool.getCurrentUser().signOut();
+        finish();
         Intent splashScreen = new Intent(getApplicationContext(), MainActivity.class);
         startActivity(splashScreen);
-        finish();
     }
 }
