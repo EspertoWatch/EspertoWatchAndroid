@@ -54,7 +54,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     EditText confirmationCode;
     Button submitButton;
     String[] userInfo;
-    String watchName;
     String uniqueId;
 
     CognitoUserPool userPool;
@@ -65,7 +64,6 @@ public class ScanActivity extends AppCompatActivity implements Callback {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.scan_devices);
-        watchName = getString(R.string.esperto_device_name);
         deviceButton = findViewById(R.id.watchDevice);
         deviceText = findViewById(R.id.deviceName);
         enterCode = findViewById(R.id.enter_code);
@@ -327,7 +325,7 @@ public class ScanActivity extends AppCompatActivity implements Callback {
 
     //callback function from BLEService - if an Esperto Device is found
     //TODO:: In future move this to scan activity
-    public void displayDevice(BluetoothDevice device, ImageButton btn, TextView txt){
+    public void displayDevice(BluetoothDevice device, ImageButton btn, TextView txt, String watchName){
         //display device address
         String name = device.getName();
         if(name == null) name = "unknown";
@@ -352,5 +350,5 @@ public class ScanActivity extends AppCompatActivity implements Callback {
 }
 
 interface Callback{
-    void displayDevice(BluetoothDevice device, ImageButton btn, TextView txt);
+    void displayDevice(BluetoothDevice device, ImageButton btn, TextView txt, String watchName);
 }

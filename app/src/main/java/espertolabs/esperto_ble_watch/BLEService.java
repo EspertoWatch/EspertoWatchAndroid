@@ -363,12 +363,13 @@ public class BLEService extends Service {
                 } else {
                     if(isEspertoWatch(name) && !deviceAlreadyFound){
                         deviceAlreadyFound = true;
+                        String watchName = getString(R.string.esperto_device_name);
                         ImageButton device = deviceButton;
                         TextView txt = deviceText;
                         BLEService caller = new BLEService();
                         Callback callBack = new ScanActivity();
                         //because of the interface, the type is Callback even thought the new instance is the CallBackImpl class. This alows to pass different types of classes that have the implementation of CallBack interface
-                        caller.register(callBack, result.getDevice(), device, txt);
+                        caller.register(callBack, result.getDevice(), device, txt, watchName);
 
                         Log.d("DEBUG:", "Address:" + result.getDevice().getAddress());
                         deviceAddress = result.getDevice().getAddress();
@@ -449,8 +450,8 @@ public class BLEService extends Service {
 
 
     //register to callback function
-    public void register(Callback callback, BluetoothDevice device, ImageButton btn, TextView txt) {
-        callback.displayDevice(device, btn, txt);
+    public void register(Callback callback, BluetoothDevice device, ImageButton btn, TextView txt, String watchName) {
+        callback.displayDevice(device, btn, txt, watchName);
     }
 
 }
