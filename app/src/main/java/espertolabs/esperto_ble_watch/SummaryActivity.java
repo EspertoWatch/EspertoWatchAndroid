@@ -99,6 +99,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     //Summary values
     TextView hr_current;
     TextView steps_current;
+    TextView hr_delta;
+    TextView steps_delta;
     TextView section_title;
 
     //instantiate api gateway handler
@@ -153,6 +155,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         flipper = (ViewFlipper)findViewById(R.id.vf);
         hr_current = (TextView) findViewById(R.id.heartRateNum);
         steps_current = (TextView) findViewById(R.id.stepCount);
+        hr_delta = (TextView) findViewById(R.id.heartRateDelta);
+        steps_delta = (TextView) findViewById(R.id.stepsDelta);
         section_title = (TextView) findViewById(R.id.sectionTitle);
 
         mTextMessage = (TextView) findViewById(R.id.message);
@@ -220,7 +224,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         messageUser.setText(greetText);
     }
 
-    @Entity(tableName = "user")
+    @Entity(tableName = "userMetrics")
     public class User {
 
         @PrimaryKey(autoGenerate = true)
@@ -234,14 +238,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
         @ColumnInfo(name = "age")
         private int age;
-
-        public int getUid() {
-            return uid;
-        }
-
-        public void setUid(int uid) {
-            this.uid = uid;
-        }
 
         public String getFirstName() {
             return firstName;
@@ -473,7 +469,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 if (gattServices == null) {
                     return;
                 }
-                Log.e("Update", "onReceive: " + gattServices.toString());
+
+                Log.i("Update", "onReceive: " + gattServices.toString());
 
                 for (BluetoothGattService gattService : gattServices) {
 
@@ -508,38 +505,35 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 mBLEService.writeRXCharacteristic(send);
             } else if (BLEService.ACTION_DATA_AVAILABLE.equals(action)) {
                 byte[] rcv = intent.getByteArrayExtra(BLEService.EXTRA_DATA);
-                Log.i("DATA","AVAIL");
-                Log.i("DATA RCV'D",Arrays.toString(rcv));
-                int heartRate = rcv[0];
-                int stepCount = ( ( rcv[1] & 0xFF ) << 8 ) | ( rcv[0] );
+                if (rcv.length % 4 == 0) {
+                    Log.i("BLE data rcv'd", Arrays.toString(rcv));
+                    for (int i = 0; i < rcv.length; i += 4) {
+                        if (rcv[i+3] == 0) {
+                            int heartRate = rcv[i];
+                            int stepCount = ( ( rcv[i+1] & 0xFFFF ) << 8 ) | ( rcv[i+2] );
 
-                Log.i("Heart rate", Integer.toString(heartRate));
-                Log.i("Step count", Integer.toString(stepCount));
+                            Log.i("Heart rate", Integer.toString(heartRate));
+                            Log.i("Step count", Integer.toString(stepCount));
 
-                storeHeartRate(heartRate);
-                storeStepCount(stepCount);
-
-//                bleConnection.setText(new String(rcv));
-
-                //TODO:: uncomment code with functional BLE module
-
-                //Log.i("data",intent.getResources().getStringExtra(BLEService.EXTRA_DATA));
-                //String characteristic = intent.getResources().getStringExtra("characteristic");
-                //if(characteristic.equals(dataCharacteristicUUID)){
-                   // mBLEService.readCharacteristic(dataCharacteristic);
-                //}
-
-                /*
-                int heartRate = data & 0x0000FF;
-                int stepCount = (data >> 8) 0x00FFFF;
-                storeHeartRate(heartRate); //update
-                storeStepCount(stepCount); //update in database and in UI display
-                updateHeartRateUI(heartRate);
-                updateStepCount(UI); //store in global variables - depends on what is being displayed in the UI
-                 */
+                            onBLEReceive(heartRate, stepCount);
+                        } else {
+                            Log.e("BLE data bad check byte", Integer.toString((int) rcv[i+3]));
+                        }
+                    }
+                } else {
+                    Log.e("BLE data bad length", Arrays.toString(rcv));
+                }
             }
         }
     };
+
+    private void onBLEReceive(int heartRate, int stepCount) {
+        storeHeartRate(heartRate);
+        storeStepCount(stepCount);
+
+        updateHeartUI(heartRate);
+        updateStepsUI(stepCount);
+    }
 
     private final BroadcastReceiver mCallReceiver = new BroadcastReceiver() {
         @Override
@@ -638,7 +632,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         return intentFilter;
     }
 
-    //TODO:: add in with actual BLE watch
     public void storeHeartRate(int heartRate){
         new Thread(new Runnable(){
             @Override
@@ -662,7 +655,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         }).start();
     }
 
-    //TODO:: add in with actual BLE watch
     public void storeStepCount(int stepCount) {
         new Thread(new Runnable(){
             @Override
@@ -697,7 +689,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 if(response != ""){
                     HeartRate hr = g.fromJson(response, HeartRate.class);
                     updateHeartUI(hr.getCurrentHR());
-                } else{
+                } else {
                     updateHeartUI(0);
                 }
                 //insert fake dailyHR vals for now
@@ -712,7 +704,17 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                String dynamicPart;
+                int last = userHR.getCurrentHR();
+                int delta = currentHr - last;
                 userHR.setCurrentHR(currentHr);
+                if (delta == 0) {
+                    dynamicPart = "No change";
+                } else {
+                    dynamicPart = Integer.toString(Math.abs(delta));
+                    dynamicPart += delta > 0 ?  " Up" : " Down";
+                }
+                hr_delta.setText(dynamicPart + " from last");
                 hr_current.setText(currentHr != 0 ? Integer.toString(userHR.getCurrentHR()) + " BPM" : "No Data");
             }
         });
@@ -722,7 +724,17 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                String dynamicPart;
+                int last = userSteps.getCurrentSteps();
+                int delta = currentSteps - last;
                 userSteps.setCurrentSteps(currentSteps);
+                if (delta == 0) {
+                    dynamicPart = "No change";
+                } else {
+                    dynamicPart = Integer.toString(Math.abs(delta));
+                    dynamicPart += delta > 0 ?  " Up" : " Down";
+                }
+                steps_delta.setText(dynamicPart + " from last");
                 steps_current.setText(currentSteps != 0 ? Integer.toString(userSteps.getCurrentSteps()) + " steps" : "No Data");
             }
         });
@@ -738,8 +750,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 Gson g = new Gson();
                 if(response != ""){
                     StepCount sc = g.fromJson(response, StepCount.class);
-                    userSteps.setCurrentSteps(sc.getCurrentSteps());
-                } else{
+                    updateStepsUI(sc.getCurrentSteps());
+                } else {
                     updateStepsUI(0);
                 }
 
