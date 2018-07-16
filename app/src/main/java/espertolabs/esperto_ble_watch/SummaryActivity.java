@@ -1,9 +1,7 @@
 package espertolabs.esperto_ble_watch;
 
 import android.Manifest;
-import android.arch.persistence.room.ColumnInfo;
-import android.arch.persistence.room.Entity;
-import android.arch.persistence.room.PrimaryKey;
+import android.arch.persistence.room.Room;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
@@ -52,6 +50,7 @@ import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
 import com.github.mikephil.charting.utils.Utils;
 import com.google.gson.Gson;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -67,10 +66,7 @@ import java.util.Observer;
 import java.util.Set;
 
 
-//TODO:: pass in internet information to adjust views
-//TODO:: connect to BLE device here
 public class SummaryActivity extends AppCompatActivity implements Observer {
-
 
     private TextView mTextMessage;
     private UserAccount user = new UserAccount();
@@ -122,7 +118,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                    // TODO updateUI("Summary");
                     return true;
                 case R.id.navigation_heart:
-                    displayHeart();
+                    displayHeart(false);
                     detailedHeart = true;
                     summaryDisplay = false;
                     detailedStep = false;
@@ -197,12 +193,39 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             }
         });
 
+        userHR.setUserId(user.getUsername());
+//        List<Integer> dailyHR = new ArrayList<>(0);
+//        userHR.setDailyHR(dailyHR);
+
+        userSteps.setUsername(user.getUsername());
+
         //retrieve data
         getHRDB();
         getStepDB();
         greetUser();
         //TODO: for now we are just setting step/hr to 0 if no data
         //TODO: need to replace with some user friendly msg
+
+        HeartRateDB hr_db = Room.databaseBuilder(getApplicationContext(),
+                HeartRateDB.class, "HeartRate").build();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                hr_db.HeartRateDAO().insertHeartRate(userHR);
+                hr_db.close();
+            }
+        }).start();
+
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                userHR = hr_db.HeartRateDAO().getUserHeartRate(user.getUsername());
+//                Log.e("userHR name", userHR.getUsername());
+//                hr_db.close();
+//            }
+//        }).start();
+
     }
 
     @Override
@@ -224,53 +247,14 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         messageUser.setText(greetText);
     }
 
-    @Entity(tableName = "userMetrics")
-    public class User {
-
-        @PrimaryKey(autoGenerate = true)
-        private int uid;
-
-        @ColumnInfo(name = "first_name")
-        private String firstName;
-
-        @ColumnInfo(name = "last_name")
-        private String lastName;
-
-        @ColumnInfo(name = "age")
-        private int age;
-
-        public String getFirstName() {
-            return firstName;
-        }
-
-        public void setFirstName(String firstName) {
-            this.firstName = firstName;
-        }
-
-        public String getLastName() {
-            return lastName;
-        }
-
-        public void setLastName(String lastName) {
-            this.lastName = lastName;
-        }
-
-        public int getAge() {
-            return age;
-        }
-
-        public void setAge(int age) {
-            this.age = age;
-        }
-
-    }
-
     //TODO:: add a loading screen to keep user occupied before data display
 
-    private void displayHeart(){
-        flipper.setDisplayedChild(1);
-        section_title.setText("Average Heart Rate (Last 30 Days)");
-        if(userHR.getDailyHR() != null){
+    private void displayHeart(boolean updateOnly){
+        if (!updateOnly) {
+            flipper.setDisplayedChild(1);
+            section_title.setText("Average Heart Rate (Last 30 Days)");
+        }
+        if(userHR.getDailyHR() != null && userHR.getDailyHR().size() != 0){
 
             List<Entry> entries = retrieveHeartRateData();
             LineDataSet dataSet = new LineDataSet(entries, "Heart Rate"); // add entries to dataset
@@ -310,8 +294,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     private List<Entry> retrieveHeartRateData(){
        //Retrieve data here
         List<Entry> entries = new ArrayList<Entry>();
-        // TODO: change from Set since it does not allow for duplicate entries
-        Set<Integer> dailyHR = userHR.getDailyHR();
+        List<Integer> dailyHR = userHR.getDailyHR();
         int timeCounter = 8; //start at 8am TODO:: add actual times once I have the esperto watch (24 h clock)
         for(Integer i: dailyHR){
             // turn your data into Entry objects
@@ -357,8 +340,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         ArrayList<BarEntry> yVals = new ArrayList<BarEntry>();
         float counter = 0;
         float timeCounter = 8; //start at 8am TODO:: add actual times once I have the esperto watch (24 h clock)
-        // TODO: change from Set since it does not allow for duplicate entries
-        Set<Integer> dailySteps = userSteps.getDailySteps();
+        List<Integer> dailySteps = userSteps.getDailySteps();
         for(Integer i:dailySteps){
             // turn your data into Entry objects
             int hours = (int)timeCounter;
@@ -633,13 +615,24 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     }
 
     public void storeHeartRate(int heartRate){
+        userHR.setCurrentHR(heartRate);
+        userHR.appendDailyHR(heartRate);
         new Thread(new Runnable(){
             @Override
             public void run(){
                 JSONObject userJsonObject = new JSONObject();
+                JSONArray userJsonArray = new JSONArray();
+                Gson gson = new Gson();
+//                String HRObj = gson.toJson(userHR);
+//                Log.e("HROBJ", HRObj);
                 try {
                     userJsonObject.put("userId", userId);
                     userJsonObject.put("currentHR", heartRate);
+                    for (int hr : userHR.getDailyHR())
+                    {
+                        userJsonArray.put(hr);
+                    }
+                    userJsonObject.put("dailyHR", userJsonArray);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -689,13 +682,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 if(response != ""){
                     HeartRate hr = g.fromJson(response, HeartRate.class);
                     updateHeartUI(hr.getCurrentHR());
+                    userHR.setDailyHR(hr.getDailyHR());
                 } else {
                     updateHeartUI(0);
+                    userHR.setDailyHR(new ArrayList<>(0));
                 }
-                //insert fake dailyHR vals for now
-                //insert some fake vals for now
-                Set<Integer> dailyHR = new HashSet<>(Arrays.asList(70, 60, 80, 100, 130, 61, 51, 62, 84, 102, 138, 65, 52, 60, 85, 111, 139, 62, 51, 67, 84, 120, 131, 68, 54));
-                userHR.setDailyHR(dailyHR);
             }
         }).start();
     }
@@ -704,6 +695,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                displayHeart(true);
                 String dynamicPart;
                 int last = userHR.getCurrentHR();
                 int delta = currentHr - last;
@@ -756,9 +748,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 }
 
                 //insert some fake vals for now
-                Set<Integer> dailySteps = new HashSet<>(Arrays.asList(8000, 9000, 10000, 9000, 8200, 9005, 10500, 9580, 8100, 9600, 10250, 9890, 8012));
+                List<Integer> dailySteps = Arrays.asList(8000, 9000, 10000, 9000, 8200, 9005, 10500, 9580, 8100, 9600, 10250, 9890, 8012);
                 userSteps.setDailySteps(dailySteps);
-                userSteps.setUsername(user.getUsername());
             }
         }).start();
     }

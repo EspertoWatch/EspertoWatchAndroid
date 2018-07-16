@@ -1,38 +1,43 @@
 package espertolabs.esperto_ble_watch;
 
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.PrimaryKey;
+
 import java.util.HashMap;
 import java.util.Observable;
-import java.util.Set;
+import java.util.List;
 
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBAttribute;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBHashKey;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBIgnore;
-import com.amazonaws.mobile.client.AWSMobileClient;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBTable;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.google.common.collect.Table;
-
-//@DynamoDBTable(tableName="espertowatch-mobilehub-1699109079-HeartRate")
+@Entity
 public class HeartRate extends Observable{
 
-    private String username;
+    @PrimaryKey(autoGenerate = true)
+    // Key for SQlite DB, do not modify
+    private int uId;
+
+    private String userId;
     private int currentHR;
-    private Set<Integer> dailyHR;
+    private List<Integer> dailyHR;
     private HashMap<String, Integer> avgDailyHR;
 
     //avgDailyHR is what we will actually be using (since our dynamoDB tables use a hashmap)
     //just keeping dailyHR cause all of the graphs currently depend on it
 
-    //@DynamoDBHashKey(attributeName = "username")
-    public String getUsername() {
-        return username;
+    public int getUId() {
+        return uId;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setUId(int uId) {
+        this.uId = uId;
     }
 
-    //@DynamoDBAttribute(attributeName = "currentHR")
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
     public int getCurrentHR() {
         return currentHR;
     }
@@ -43,13 +48,20 @@ public class HeartRate extends Observable{
         notifyObservers();
     }
 
-    //@DynamoDBAttribute(attributeName = "dailyHR")
-    public Set<Integer> getDailyHR() {
+    public List<Integer> getDailyHR() {
         return dailyHR;
     }
 
-    public void setDailyHR(Set<Integer> dailyHR) {
+    public void setDailyHR(List<Integer> dailyHR) {
         this.dailyHR = dailyHR;
+        setChanged();
+        notifyObservers();
+    }
+
+    public void appendDailyHR(int heartRate) {
+        List<Integer> tempDailyHR = dailyHR;
+        tempDailyHR.add(heartRate);
+        this.dailyHR = tempDailyHR;
         setChanged();
         notifyObservers();
     }

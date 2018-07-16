@@ -36,10 +36,6 @@ public class ApiGatewayHandler {
 
     public static final okhttp3.MediaType JSON = okhttp3.MediaType.parse("application/json; charset=utf-8");
 
-    final OkHttpClient client = new OkHttpClient.Builder()
-            .addInterceptor(awsInterceptor)
-            .build();
-
     public OkHttpClient getHttpClient(){
         final OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(awsInterceptor)
@@ -47,7 +43,6 @@ public class ApiGatewayHandler {
 
         return client;
     }
-
 
     public String getHeartRate(String userId){
         final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/heartRate/" + userId;
@@ -87,7 +82,6 @@ public class ApiGatewayHandler {
 
         return body;
     }
-
 
     public String postUserInfo(String userJson){
         final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/userInfo/";
