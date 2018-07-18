@@ -59,6 +59,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Observable;
@@ -683,9 +684,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     HeartRate hr = g.fromJson(response, HeartRate.class);
                     updateHeartUI(hr.getCurrentHR());
                     userHR.setDailyHR(hr.getDailyHR());
+                    userHR.setAvgDailyHR(hr.getAvgDailyHR());
                 } else {
                     updateHeartUI(0);
-                    userHR.setDailyHR(new ArrayList<>(0));
+                    userHR.setDailyHR(new ArrayList<>());
+                    userHR.setAvgDailyHR(new HashMap<>());
                 }
             }
         }).start();

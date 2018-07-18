@@ -46,6 +46,7 @@ public class LoginActivity extends AppCompatActivity {
     CognitoUserPool userPool;
     private ApiGatewayHandler handler;
     Boolean hasAttemptedLogin = false;
+    private ConnectivityManager cm;
     int PERMISSION_ALL = 1;
 
     @Override
@@ -57,6 +58,8 @@ public class LoginActivity extends AppCompatActivity {
         Button customLogin = (Button) findViewById(R.id.customLogin);
         usernameView = (TextView) findViewById(R.id.username); //accept custom username
         passwordView = (TextView) findViewById(R.id.password); //accept custom password
+
+        cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
         userPool = new CognitoUserPool(getApplicationContext(),
                 getString(R.string.cognito_userpool_id),
@@ -206,9 +209,17 @@ public class LoginActivity extends AppCompatActivity {
         String passwordInput = passwordView.getText().toString();
         Log.d("username",usernameInput);
         Log.i("password",passwordInput);
-        AuthenticationDetails authenticationDetails = new AuthenticationDetails(usernameInput, passwordInput, null);
-        continuation.setAuthenticationDetails(authenticationDetails);
-        continuation.continueTask();
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+
+        if (isConnected) {
+            AuthenticationDetails authenticationDetails = new AuthenticationDetails(usernameInput, passwordInput, null);
+            continuation.setAuthenticationDetails(authenticationDetails);
+            continuation.continueTask();
+        } else {
+            Toast.makeText(this, getString(R.string.internet_required), Toast.LENGTH_SHORT).show();
+        }
     }
 
     //alert user of failed login attempt
@@ -229,7 +240,6 @@ public class LoginActivity extends AppCompatActivity {
 
     public void createAccount(View v){
         //TODO:: send intent to register activity
-        ConnectivityManager cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
         boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
