@@ -3,6 +3,7 @@ package espertolabs.esperto_ble_watch;
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.PrimaryKey;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Observable;
 import java.util.List;
@@ -21,6 +22,11 @@ public class HeartRate extends Observable{
 
     //avgDailyHR is what we will actually be using (since our dynamoDB tables use a hashmap)
     //just keeping dailyHR cause all of the graphs currently depend on it
+
+    HeartRate() {
+        this.dailyHR = new ArrayList<>();
+        this.avgDailyHR = new HashMap<>();
+    }
 
     public int getUId() {
         return uId;
@@ -72,6 +78,14 @@ public class HeartRate extends Observable{
 
     public void setAvgDailyHR(HashMap<String, Integer> avgDailyHR) {
         this.avgDailyHR = avgDailyHR;
+        setChanged();
+        notifyObservers();
+    }
+
+    public void addAvgDailyHR(String unixTime, Integer heartRate) {
+        if (this.avgDailyHR != null) {
+            this.avgDailyHR.put(unixTime, heartRate);
+        }
         setChanged();
         notifyObservers();
     }

@@ -60,11 +60,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
-import java.util.Set;
 
 
 public class SummaryActivity extends AppCompatActivity implements Observer {
@@ -207,16 +206,20 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         //TODO: for now we are just setting step/hr to 0 if no data
         //TODO: need to replace with some user friendly msg
 
+//        onBLEReceive(60, 12345);
+//        onBLEReceive(65, 45645);
+//        onBLEReceive(75, 78978);
+
         HeartRateDB hr_db = Room.databaseBuilder(getApplicationContext(),
                 HeartRateDB.class, "HeartRate").build();
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                hr_db.HeartRateDAO().insertHeartRate(userHR);
-                hr_db.close();
-            }
-        }).start();
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                hr_db.HeartRateDAO().insertHeartRate(userHR);
+//                hr_db.close();
+//            }
+//        }).start();
 
 //        new Thread(new Runnable() {
 //            @Override
@@ -255,7 +258,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             flipper.setDisplayedChild(1);
             section_title.setText("Average Heart Rate (Last 30 Days)");
         }
-        if(userHR.getDailyHR() != null && userHR.getDailyHR().size() != 0){
+        if(userHR.getAvgDailyHR().size() != 0){
 
             List<Entry> entries = retrieveHeartRateData();
             LineDataSet dataSet = new LineDataSet(entries, "Heart Rate"); // add entries to dataset
@@ -295,11 +298,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     private List<Entry> retrieveHeartRateData(){
        //Retrieve data here
         List<Entry> entries = new ArrayList<Entry>();
-        List<Integer> dailyHR = userHR.getDailyHR();
+        HashMap<String, Integer> avgDailyHR = userHR.getAvgDailyHR();
         int timeCounter = 8; //start at 8am TODO:: add actual times once I have the esperto watch (24 h clock)
-        for(Integer i: dailyHR){
+        for(Map.Entry<String, Integer> entry : avgDailyHR.entrySet()){
             // turn your data into Entry objects
-            entries.add(new Entry(timeCounter, i)); //wrap each data point into Entry objects
+            entries.add(new Entry(timeCounter, entry.getValue())); //wrap each data point into Entry objects
             timeCounter++;
         }
         return entries;
@@ -414,9 +417,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
+            boolean connectedOnce = false;
             if (BLEService.ACTION_GATT_CONNECTED.equals(action)) {
                 Log.i("Update", "Device connected");
                 mConnected = true;
+                connectedOnce = true;
                 invalidateOptionsMenu();
                 bleConnection.setText("Watch connected");
                 bleConnection.setTextColor(Color.GREEN);
@@ -426,13 +431,15 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 Toast.makeText(getApplicationContext(), getString(R.string.watch_disconnected), Toast.LENGTH_SHORT).show();
                 invalidateOptionsMenu();
 
-                Date now = new Date();
+                if (connectedOnce == true) {
+                    Date now = new Date();
+                    SimpleDateFormat ft = new SimpleDateFormat ("hh:mm:ss a dd/MM/YYYY");
+                    String lastConnectedTime = ft.format(now);
 
-                SimpleDateFormat ft = new SimpleDateFormat ("hh:mm:ss a dd/MM/YYYY");
-                String timeString = ft.format(now);
+                    bleConnection.setText("Watch disconnected\nLast seen at " + lastConnectedTime);
+                    bleConnection.setTextColor(Color.RED);
+                }
 
-                bleConnection.setText("Watch disconnected\nLast connected at " + timeString);
-                bleConnection.setTextColor(Color.RED);
                 final Handler connectHandler = new Handler();
                 connectHandler.postDelayed(new Runnable() {
                     @Override
@@ -616,14 +623,17 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     }
 
     public void storeHeartRate(int heartRate){
+        Date now = new Date();
         userHR.setCurrentHR(heartRate);
         userHR.appendDailyHR(heartRate);
+        userHR.addAvgDailyHR(Long.toString(now.getTime()), heartRate);
         new Thread(new Runnable(){
             @Override
             public void run(){
                 JSONObject userJsonObject = new JSONObject();
+                JSONObject userJsonMap = new JSONObject(userHR.getAvgDailyHR());
                 JSONArray userJsonArray = new JSONArray();
-                Gson gson = new Gson();
+//                Gson gson = new Gson();
 //                String HRObj = gson.toJson(userHR);
 //                Log.e("HROBJ", HRObj);
                 try {
@@ -634,6 +644,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                         userJsonArray.put(hr);
                     }
                     userJsonObject.put("dailyHR", userJsonArray);
+                    userJsonObject.put("avgDailyHR", userJsonMap);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -679,6 +690,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             public void run() {
                 //send request via apigateway
                 String response = handler.getHeartRate(userId);
+                Log.i("HR obj response", response);
                 Gson g = new Gson();
                 if(response != ""){
                     HeartRate hr = g.fromJson(response, HeartRate.class);
@@ -687,8 +699,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     userHR.setAvgDailyHR(hr.getAvgDailyHR());
                 } else {
                     updateHeartUI(0);
-                    userHR.setDailyHR(new ArrayList<>());
-                    userHR.setAvgDailyHR(new HashMap<>());
                 }
             }
         }).start();
