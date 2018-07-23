@@ -11,26 +11,26 @@ import java.util.List;
 
 public class Converters {
     @TypeConverter
-    public static List<Integer> listFromString(String value) {
-        Type listType = new TypeToken<List<Integer>>() {}.getType();
+    public static HashMap<String, Integer> intMapFromString(String value) {
+        Type listType = new TypeToken<HashMap<String, Integer>>() {}.getType();
         return new Gson().fromJson(value, listType);
     }
 
     @TypeConverter
-    public static String fromList(List<Integer> list) {
+    public static String fromIntMap(HashMap<String, Integer> list) {
         Gson gson = new Gson();
         String json = gson.toJson(list);
         return json;
     }
 
     @TypeConverter
-    public static HashMap<String, Integer> mapFromString(String value) {
-        Type mapType = new TypeToken<HashMap<String, Integer>>() {}.getType();
+    public static HashMap<String, Float> floatMapFromString(String value) {
+        Type mapType = new TypeToken<HashMap<String, Float>>() {}.getType();
         return new Gson().fromJson(value, mapType);
     }
 
     @TypeConverter
-    public static String fromMap(HashMap<String, Integer> map) {
+    public static String fromFloatMap(HashMap<String, Float> map) {
         Gson gson = new Gson();
         String json = gson.toJson(map);
         return json;

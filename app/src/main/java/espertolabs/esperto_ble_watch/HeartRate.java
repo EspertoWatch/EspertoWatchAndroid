@@ -2,11 +2,10 @@ package espertolabs.esperto_ble_watch;
 
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.PrimaryKey;
+import android.util.Log;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Observable;
-import java.util.List;
 
 @Entity
 public class HeartRate extends Observable{
@@ -14,18 +13,19 @@ public class HeartRate extends Observable{
     @PrimaryKey(autoGenerate = true)
     // Key for SQlite DB, do not modify
     private int uId;
-
     private String userId;
     private int currentHR;
-    private List<Integer> dailyHR;
-    private HashMap<String, Integer> avgDailyHR;
+    // Key: "dd-MM-YYYY kk", where kk is the current hour of the day from 1 to 24
+    // Value: The average heart rate for that hour
+    private HashMap<String, Float> avgHourlyHR;
 
-    //avgDailyHR is what we will actually be using (since our dynamoDB tables use a hashmap)
-    //just keeping dailyHR cause all of the graphs currently depend on it
+    // For internal app use only, used to calculate the avg, not uploaded to server
+    private HashMap<String, Integer> avgHourlyHRCount;
 
     HeartRate() {
-        this.dailyHR = new ArrayList<>();
-        this.avgDailyHR = new HashMap<>();
+        this.currentHR = 0;
+        this.avgHourlyHR = new HashMap<>();
+        this.avgHourlyHRCount = new HashMap<>();
     }
 
     public int getUId() {
@@ -54,40 +54,65 @@ public class HeartRate extends Observable{
         notifyObservers();
     }
 
-    public List<Integer> getDailyHR() {
-        return dailyHR;
+    public HashMap<String, Integer> getAvgHourlyHRCount() {
+        return avgHourlyHRCount;
     }
 
-    public void setDailyHR(List<Integer> dailyHR) {
-        this.dailyHR = dailyHR;
+    public void setAvgHourlyHRCount(HashMap<String, Integer> avgHourlyHRCount) {
+        this.avgHourlyHRCount = avgHourlyHRCount;
         setChanged();
         notifyObservers();
     }
 
-    public void appendDailyHR(int heartRate) {
-        List<Integer> tempDailyHR = dailyHR;
-        tempDailyHR.add(heartRate);
-        this.dailyHR = tempDailyHR;
-        setChanged();
-        notifyObservers();
-    }
+    private void incrAvgHourlyHRCount(String formattedDateAndTime) {
+        if (this.avgHourlyHRCount != null) {
+            Integer heartRateCount = this.avgHourlyHRCount.get(formattedDateAndTime);
+            Integer newHeartRateCount;
 
-    public HashMap<String, Integer> getAvgDailyHR() {
-        return avgDailyHR;
-    }
+            if (heartRateCount != null) {
+                // Avg count has already been recorded for this hour, increment
+                newHeartRateCount = heartRateCount + 1;
+            } else {
+                // Avg count has not been recorded yet for this hour, this will be the initial value
+                newHeartRateCount = 1;
+            }
 
-    public void setAvgDailyHR(HashMap<String, Integer> avgDailyHR) {
-        this.avgDailyHR = avgDailyHR;
-        setChanged();
-        notifyObservers();
-    }
-
-    public void addAvgDailyHR(String unixTime, Integer heartRate) {
-        if (this.avgDailyHR != null) {
-            this.avgDailyHR.put(unixTime, heartRate);
+            this.avgHourlyHRCount.put(formattedDateAndTime, newHeartRateCount);
+            setChanged();
+            notifyObservers();
         }
+    }
+
+    public HashMap<String, Float> getAvgHourlyHR() {
+        return avgHourlyHR;
+    }
+
+    public void setAvgHourlyHR(HashMap<String, Float> avgHourlyHR) {
+        this.avgHourlyHR = avgHourlyHR;
         setChanged();
         notifyObservers();
+    }
+
+    public void addAvgHourlyHR(String formattedDateAndTime, Integer heartRate) {
+        if (this.avgHourlyHR != null) {
+            incrAvgHourlyHRCount(formattedDateAndTime);
+            Float heartRateAvg = this.avgHourlyHR.get(formattedDateAndTime);
+            Integer heartRateCount = this.avgHourlyHRCount.get(formattedDateAndTime);
+            Float newHeartRateAvg;
+
+            if (heartRateAvg != null) {
+                // Avg has already been recorded for this hour, append to this avg
+                float avgWeight = 1/(float) heartRateCount;
+                newHeartRateAvg = (heartRateAvg * (1-avgWeight)) + (heartRate * (avgWeight));
+            } else {
+                // Avg has not been recorded yet for this hour, this will be the initial value
+                newHeartRateAvg = (float) heartRate;
+            }
+
+            this.avgHourlyHR.put(formattedDateAndTime, newHeartRateAvg);
+            setChanged();
+            notifyObservers();
+        }
     }
 
 }

@@ -1,26 +1,44 @@
 package espertolabs.esperto_ble_watch;
 
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.PrimaryKey;
+
 import java.util.HashMap;
 import java.util.Observable;
 import java.util.List;
 
-
+@Entity
 public class StepCount extends Observable{
 
-    private String username;
+    @PrimaryKey(autoGenerate = true)
+    // Key for SQlite DB, do not modify
+    private int uId;
+
+    private String userId;
     private int currentSteps;
-    private List<Integer> dailySteps;
+    // Key: "dd-MM-YYYY"
+    // Value: The total steps for that day
     private HashMap<String, Integer> totalDailySteps;
 
-    //totalDailySteps is what we will actually be using (since our dynamoDB tables use a hashmap)
-    //just keeping dailySteps cause all of the graphs currently depend on it
-
-    public String getUsername() {
-        return username;
+    StepCount() {
+        this.currentSteps = 0;
+        this.totalDailySteps = new HashMap<>();
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public int getUId() {
+        return uId;
+    }
+
+    public void setUId(int uId) {
+        this.uId = uId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
     public int getCurrentSteps() {
@@ -33,12 +51,8 @@ public class StepCount extends Observable{
         notifyObservers();
     }
 
-    public List<Integer> getDailySteps() {
-        return dailySteps;
-    }
-
-    public void setDailySteps(List<Integer> dailySteps) {
-        this.dailySteps = dailySteps;
+    public void addCurrentSteps(int currentSteps) {
+        this.currentSteps += currentSteps;
         setChanged();
         notifyObservers();
     }
@@ -51,6 +65,25 @@ public class StepCount extends Observable{
         this.totalDailySteps = totalDailySteps;
         setChanged();
         notifyObservers();
+    }
+
+    public void addTotalDailySteps(String formattedDateAndTime, Integer steps) {
+        if (this.totalDailySteps != null) {
+            Integer totalDailySteps = this.totalDailySteps.get(formattedDateAndTime);
+            Integer newTotalDailySteps;
+
+            if (totalDailySteps != null) {
+                // Total has already been recorded for this day, append to this
+                newTotalDailySteps = totalDailySteps + steps;
+            } else {
+                // Total has not been recorded yet for this day, this will be the initial value
+                newTotalDailySteps = steps;
+            }
+
+            this.totalDailySteps.put(formattedDateAndTime, newTotalDailySteps);
+            setChanged();
+            notifyObservers();
+        }
     }
 
 }
