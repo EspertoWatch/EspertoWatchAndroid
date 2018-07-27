@@ -47,7 +47,8 @@ dependencies {
     implementation 'com.microsoft.azure:azure-mobile-android:3.4.0'
     implementation('com.amazonaws:aws-android-sdk-mobile-client:2.6.+@aar') { transitive = true; }
     implementation 'com.amazonaws:aws-android-sdk-ddb-mapper:2.6.+'
-    implementation 'commons-logging:commons-logging:1.1'
+    implementation 'android.arch.persistence.room:runtime:1.1.1'
+    annotationProcessor 'android.arch.persistence.room:compiler:1.1.1'
     // Required for Cognito
     implementation 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.6.8'
     androidTestImplementation 'junit:junit:4.12'
@@ -56,5 +57,4 @@ dependencies {
     implementation 'com.amazonaws:aws-android-sdk-apigateway-core:2.6.19'
     debugImplementation 'com.ghedeon:aws-interceptor:0.6'
     implementation 'com.squareup.okhttp3:okhttp:3.7.0'
-    annotationProcessor "android.arch.persistence.room:compiler:1.1.1"
 }
