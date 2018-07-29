@@ -8,9 +8,23 @@
     <com.github.mikephil.charting.charts.BarChart
         android:id="@+id/stepChart"
         android:layout_width="match_parent"
-        android:layout_height="360dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/stepChartTitle"
         app:layout_constraintVertical_bias="0" />
+
+    <TextView
+        android:id="@+id/stepChartTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/lato"
+        android:text="@string/title_steps_chart"
+        android:textColor="@color/EspertoTextGrey"
+        android:textSize="30sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </android.support.constraint.ConstraintLayout>

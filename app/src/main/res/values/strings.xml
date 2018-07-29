@@ -45,7 +45,12 @@
     <string name="title_activity_summary">Esperto Watch</string>
     <string name="title_profile">Summary</string>
     <string name="title_steps">Step Count</string>
+    <string name="title_heart_rate">Heart Rate</string>
+    <string name="title_metrics">My Current Metrics</string>
+    <string name="title_heart_rate_chart">My Heart Rate</string>
+    <string name="title_steps_chart">My Step Count</string>
     <string name="app_name_lower">Esperto Watch</string>
+    <string name="title_greeting">Welcome</string>
     <string name="connected">connected</string>
     <string name="connecting">connected</string>
     <string name="main_user">mmacmahon</string>

@@ -95,7 +95,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     TextView steps_current;
     TextView hr_delta;
     TextView steps_delta;
-    TextView section_title;
 
     //instantiate api gateway handler
     final ApiGatewayHandler handler = new ApiGatewayHandler();
@@ -112,7 +111,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             switch (item.getItemId()) {
                 case R.id.navigation_profile:
                     flipper.setDisplayedChild(3);
-                    section_title.setText("Current Heart Rate and Step Count");
                     summaryDisplay = true;
                     detailedHeart = false;
                     detailedStep = false;
@@ -154,11 +152,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         steps_current = findViewById(R.id.stepCount);
         hr_delta = findViewById(R.id.heartRateDelta);
         steps_delta = findViewById(R.id.stepsDelta);
-        section_title = findViewById(R.id.sectionTitle);
 
         mTextMessage = findViewById(R.id.message);
         BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+        navigation.setItemBackgroundResource(R.drawable.navigationbackground);
 
         //Check whether BLE is supported
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -227,8 +225,9 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     }
 
     public void greetUser(){
-        String greetText = "Welcome " + user.getName() + "!";
-        messageUser.setText(greetText);
+        String fullName = user.getName();
+        String[] splitName = fullName.trim().split("\\s+");
+        messageUser.append(" "+splitName[0]);
     }
 
     //TODO:: add a loading screen to keep user occupied before data display
@@ -236,7 +235,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     private void displayHeart(boolean updateOnly){
         if (!updateOnly) {
             flipper.setDisplayedChild(1);
-            section_title.setText("Average Heart Rate (Last 30 Days)");
         }
         if (userHR.getAvgHourlyHR().size() != 0){
             List<Entry> entries = retrieveHeartRateData();
@@ -291,7 +289,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     private void displaySteps(boolean updateOnly){
         if (!updateOnly) {
             flipper.setDisplayedChild(2);
-            section_title.setText("Daily Step Count (Last 30 Days)");
         }
         if (userSteps.getTotalDailySteps().size() != 0) {
             BarDataSet dataSet = retrieveStepData();
