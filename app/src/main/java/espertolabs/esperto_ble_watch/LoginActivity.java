@@ -53,11 +53,11 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-        Button fbRedirect = (Button) findViewById(R.id.facebookLogin);
-        Button googleRedirect = (Button) findViewById(R.id.googleLogin);
-        Button customLogin = (Button) findViewById(R.id.customLogin);
-        usernameView = (TextView) findViewById(R.id.username); //accept custom username
-        passwordView = (TextView) findViewById(R.id.password); //accept custom password
+        Button fbRedirect = findViewById(R.id.facebookLogin);
+        Button googleRedirect = findViewById(R.id.googleLogin);
+        Button customLogin = findViewById(R.id.customLogin);
+        usernameView = findViewById(R.id.username); //accept custom username
+        passwordView = findViewById(R.id.password); //accept custom password
 
         cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 

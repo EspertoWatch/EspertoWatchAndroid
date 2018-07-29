@@ -8,7 +8,7 @@
 
     <!-- Strings related to Login Activity -->
     <string name="prompt_first_name">First Name</string>
-    <string name="username">Username</string>
+    <string name="username">Email</string>
     <string name="prompt_last_name">Last Name</string>
     <string name="prompt_username">Email</string>
     <string name="prompt_password">Password</string>
