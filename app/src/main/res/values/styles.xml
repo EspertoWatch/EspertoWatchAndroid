@@ -24,4 +24,23 @@
         <item name="android:windowNoTitle">true</item>
     </style>
 
+    <style name="EspertoTextBox" parent="android:Widget.Material.Light.EditText">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginEnd">8dp</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:layout_marginTop">32dp</item>
+        <item name="android:background">@drawable/edit_text_line</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:focusableInTouchMode">true</item>
+        <item name="android:fontFamily">@font/lato</item>
+        <item name="android:textColor">@color/EspertoTextGrey</item>
+        <item name="android:inputType">textPersonName</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:paddingBottom">12dp</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:textAppearance">@android:style/TextAppearance.Material.Medium</item>
+    </style>
+
 </resources>

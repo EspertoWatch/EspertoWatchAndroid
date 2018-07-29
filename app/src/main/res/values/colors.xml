@@ -14,4 +14,6 @@
     <color name="EspertoBackground">#eff2f7</color>
     <color name="EspertoBlue">#007aff</color>
     <color name="EspertoDarkGrey">#47525e</color>
+    <color name="EspertoTextGrey">#47525e</color>
+    <color name="EspertoBlueLight">#cfe6ff</color>
 </resources>
