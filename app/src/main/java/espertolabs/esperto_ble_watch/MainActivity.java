@@ -40,19 +40,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        /*
-        ImageButton startButton = (ImageButton) findViewById(R.id.startButton);
-        startButton.setOnClickListener(new Button.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent startScan = new Intent(v.getContext(), LoginActivity.class);
-                startActivity(startScan);
-                finish();
-            }
-
-        });
-        */
-
         userPool = new CognitoUserPool(getApplicationContext(),
                 getString(R.string.cognito_userpool_id),
                 getString(R.string.cognito_client_id),
@@ -61,11 +48,10 @@ public class MainActivity extends AppCompatActivity {
 
         CognitoUser currentUser = userPool.getCurrentUser();
         if(currentUser != null){
-            Log.d("CURRENTUSER", currentUser.toString());
             currentUser.getSessionInBackground(authenticationHandler);
         }
         else{
-            authenticationFailure();
+            goToLogin();
         }
 
 
@@ -115,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
         }
         @Override
         public void getAuthenticationDetails(AuthenticationContinuation authenticationContinuation, String userId) {
-            getUserAuthentication(authenticationContinuation, userId);
+            getUserAuthentication(authenticationContinuation);
         }
 
         @Override
@@ -128,8 +114,8 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onFailure(Exception exception) {
-            authenticationFailure();
-            // Sign-in failed, check exception for the cause
+            //if current user cannot be authenticated, go to login screen
+            goToLogin();
         }
         @Override
         public void authenticationChallenge(ChallengeContinuation continuation) {
@@ -137,37 +123,18 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private void getUserAuthentication(AuthenticationContinuation continuation, String username) {
-        //String usernameInput = usernameView.getText().toString();
-        //String passwordInput = passwordView.getText().toString();
-        //Log.d("username",usernameInput);
-        //Log.i("password",passwordInput);
-
+    private void getUserAuthentication(AuthenticationContinuation continuation) {
         String usernameInput = "";
         String passwordInput = "";
 
         AuthenticationDetails authenticationDetails = new AuthenticationDetails(usernameInput, passwordInput, null);
         continuation.setAuthenticationDetails(authenticationDetails);
         continuation.continueTask();
-
-        /*
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
-
-        if (isConnected) {
-            AuthenticationDetails authenticationDetails = new AuthenticationDetails(usernameInput, passwordInput, null);
-            continuation.setAuthenticationDetails(authenticationDetails);
-            continuation.continueTask();
-        } else {
-            Toast.makeText(this, getString(R.string.internet_required), Toast.LENGTH_SHORT).show();
-        }
-        */
     }
 
-    private void authenticationFailure(){
-        Log.d("GOTOLOGIN", "Not logged in");
-        Intent startScan = new Intent(getApplicationContext(), LoginActivity.class);
-        startActivity(startScan);
+    private void goToLogin(){
+        Intent login = new Intent(getApplicationContext(), LoginActivity.class);
+        startActivity(login);
         finish();
     }
 
