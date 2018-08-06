@@ -59,11 +59,12 @@
     <ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/vf"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="48dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="16dp"
         android:layout_marginTop="16dp"
-        app:layout_constraintBottom_toTopOf="@+id/navigation"
-        app:layout_constraintTop_toBottomOf="@+id/messageUser">
+        app:layout_constraintBottom_toTopOf="@+id/bleConnection"
+        app:layout_constraintTop_toBottomOf="@+id/messageUser"
+        app:layout_constraintVertical_bias="0.5">
 
         <include
             android:id="@+id/include1"
