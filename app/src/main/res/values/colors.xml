@@ -9,6 +9,12 @@
     <color name="accent">#ff7080</color>
     <color name="green">#bdf708</color>
     <color name="heart">#F50057</color>
-    <color name="steps">#2196F3</color>
+    <color name="steps">#2196f3</color>
     <color name="navbar">#2196f3</color>
+    <color name="EspertoBackground">#eff2f7</color>
+    <color name="EspertoBlue">#007aff</color>
+    <color name="EspertoDarkGrey">#47525e</color>
+    <color name="EspertoTextGrey">#47525e</color>
+    <color name="EspertoBlueLight">#cfe6ff</color>
+    <color name="EspertoGreyPale">#838B8B</color>
 </resources>

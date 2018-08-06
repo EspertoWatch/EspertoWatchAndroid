@@ -53,11 +53,11 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-        Button fbRedirect = (Button) findViewById(R.id.facebookLogin);
-        Button googleRedirect = (Button) findViewById(R.id.googleLogin);
-        Button customLogin = (Button) findViewById(R.id.customLogin);
-        usernameView = (TextView) findViewById(R.id.username); //accept custom username
-        passwordView = (TextView) findViewById(R.id.password); //accept custom password
+        Button fbRedirect = findViewById(R.id.facebookLogin);
+        Button googleRedirect = findViewById(R.id.googleLogin);
+        Button customLogin = findViewById(R.id.customLogin);
+        usernameView = findViewById(R.id.username); //accept custom username
+        passwordView = findViewById(R.id.password); //accept custom password
 
         cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
@@ -66,11 +66,6 @@ public class LoginActivity extends AppCompatActivity {
                 getString(R.string.cognito_client_id), 
                 getString(R.string.cognito_client_secret),
                 Regions.fromName(getString(R.string.cognito_region)));
-
-        CognitoUser currentUser = userPool.getCurrentUser();
-        if(currentUser != null){
-            currentUser.getSessionInBackground(authenticationHandler);
-        }
 
         //check if Bluetooth is enabled
         BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -251,5 +246,9 @@ public class LoginActivity extends AppCompatActivity {
         } else {
             Toast.makeText(this, getString(R.string.internet_required), Toast.LENGTH_SHORT).show();
         }
+    }
+    @Override
+    public void onBackPressed() {
+        //don't allow users to press back
     }
 }

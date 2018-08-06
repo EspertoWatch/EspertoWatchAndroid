@@ -5,46 +5,33 @@
     android:id="@+id/container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorWhite"
+    android:background="@color/EspertoBackground"
     tools:context=".SummaryActivity">
 
     <include
         android:id="@+id/including"
         layout="@layout/my_toolbar"
-        tools:layout_editor_absoluteY="4dp" />
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/messageUser"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingTop="12dp"
+        android:layout_width="0dp"
+        android:layout_height="73dp"
+        android:layout_marginStart="83dp"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/lato"
         android:paddingBottom="12dp"
-        android:layout_marginTop="84dp"
-        android:textColor="@color/colorPrimary"
-        android:textSize="40sp"
-        android:text="Welcome!"
+        android:paddingTop="12dp"
+        android:text="@string/title_greeting"
+        android:textAlignment="viewStart"
+        android:textColor="@color/EspertoTextGrey"
+        android:textSize="36sp"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="@id/including"
-        app:layout_constraintBottom_toTopOf="@id/vf"
-        app:layout_constraintVertical_bias="0"
-        app:layout_constraintHorizontal_bias="0.5"
-        android:gravity="center"/>
-
-    <TextView
-        android:id="@+id/sectionTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingStart="8dp"
-        android:layout_marginTop="10dp"
-        android:text="Current Heart Rate and Step Count"
-        android:textColor="@color/colorPrimary"
-        android:textSize="20sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/messageUser"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintVertical_bias="0"/>
+        app:layout_constraintTop_toBottomOf="@+id/including"
+        app:layout_constraintVertical_chainStyle="spread_inside" />
 
     <TextView
         android:id="@+id/bleConnection"
@@ -55,17 +42,15 @@
         android:textColor="@android:color/holo_red_dark"
         android:textSize="18sp"
         app:layout_constraintBottom_toTopOf="@+id/navigation"
-        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"/>
+        app:layout_constraintRight_toRightOf="parent" />
 
     <android.support.design.widget.BottomNavigationView
         android:id="@+id/navigation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="0dp"
-        android:layout_marginStart="0dp"
-        android:background="@color/navbar"
+        android:background="@android:color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
@@ -74,18 +59,41 @@
     <ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/vf"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/sectionTitle"
-        app:layout_constraintBottom_toTopOf="@id/bleConnection">
+        android:layout_height="0dp"
+        android:layout_marginBottom="16dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintBottom_toTopOf="@+id/bleConnection"
+        app:layout_constraintTop_toBottomOf="@+id/messageUser"
+        app:layout_constraintVertical_bias="0.5">
 
-        <include android:id="@+id/include1" layout="@layout/summary" />
-        <include android:id="@+id/include2" layout="@layout/heart_rate" />
-        <include android:id="@+id/include3" layout="@layout/steps" />
+        <include
+            android:id="@+id/include1"
+            layout="@layout/summary"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <include
+            android:id="@+id/include2"
+            layout="@layout/heart_rate" />
+
+        <include
+            android:id="@+id/include3"
+            layout="@layout/steps" />
 
     </ViewFlipper>
 
-
-
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintBottom_toBottomOf="@+id/messageUser"
+        app:layout_constraintEnd_toStartOf="@+id/messageUser"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/messageUser"
+        app:srcCompat="@drawable/profile" />
 
 
 </android.support.constraint.ConstraintLayout>

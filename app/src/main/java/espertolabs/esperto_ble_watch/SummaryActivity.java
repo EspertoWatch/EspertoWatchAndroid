@@ -30,6 +30,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
@@ -95,7 +96,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     TextView steps_current;
     TextView hr_delta;
     TextView steps_delta;
-    TextView section_title;
+    ImageView logoImage;
 
     //instantiate api gateway handler
     final ApiGatewayHandler handler = new ApiGatewayHandler();
@@ -112,7 +113,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             switch (item.getItemId()) {
                 case R.id.navigation_profile:
                     flipper.setDisplayedChild(3);
-                    section_title.setText("Current Heart Rate and Step Count");
                     summaryDisplay = true;
                     detailedHeart = false;
                     detailedStep = false;
@@ -150,15 +150,17 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         heartChart = findViewById(R.id.heartChart); //used to display daily HR
         stepChart = findViewById(R.id.stepChart); //used to display daily stepCount
         flipper = findViewById(R.id.vf);
+        logoImage = findViewById(R.id.logo);
         hr_current = findViewById(R.id.heartRateNum);
         steps_current = findViewById(R.id.stepCount);
         hr_delta = findViewById(R.id.heartRateDelta);
         steps_delta = findViewById(R.id.stepsDelta);
-        section_title = findViewById(R.id.sectionTitle);
+        steps_delta = findViewById(R.id.stepsDelta);
 
         mTextMessage = findViewById(R.id.message);
         BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+        navigation.setItemBackgroundResource(R.drawable.navigationbackground);
 
         //Check whether BLE is supported
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -201,6 +203,13 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             }
         });
 
+        logoImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                syncWatch();
+            }
+        });
+
         userHR.setUserId(user.getUsername());
         userSteps.setUserId(user.getUsername());
 
@@ -227,8 +236,9 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     }
 
     public void greetUser(){
-        String greetText = "Welcome " + user.getName() + "!";
-        messageUser.setText(greetText);
+        String fullName = user.getName();
+        String[] splitName = fullName.trim().split("\\s+");
+        messageUser.append(" "+splitName[0]);
     }
 
     //TODO:: add a loading screen to keep user occupied before data display
@@ -236,7 +246,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     private void displayHeart(boolean updateOnly){
         if (!updateOnly) {
             flipper.setDisplayedChild(1);
-            section_title.setText("Average Heart Rate (Last 30 Days)");
         }
         if (userHR.getAvgHourlyHR().size() != 0){
             List<Entry> entries = retrieveHeartRateData();
@@ -291,7 +300,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     private void displaySteps(boolean updateOnly){
         if (!updateOnly) {
             flipper.setDisplayedChild(2);
-            section_title.setText("Daily Step Count (Last 30 Days)");
         }
         if (userSteps.getTotalDailySteps().size() != 0) {
             BarDataSet dataSet = retrieveStepData();
@@ -391,6 +399,21 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         }
     };
 
+    void syncWatch() {
+        // Send updated time and date every time summary is opened
+        Date now = new Date();
+
+        SimpleDateFormat ft = new SimpleDateFormat ("HH:mm:ss", Locale.US);
+        String timeString = ft.format(now);
+        byte[] send = timeString.getBytes(StandardCharsets.UTF_8);
+        mBLEService.writeRXCharacteristic(send);
+
+        ft = new SimpleDateFormat ("dd/MM/YYYY", Locale.US);
+        timeString = ft.format(now);
+        send = timeString.getBytes(StandardCharsets.UTF_8);
+        mBLEService.writeRXCharacteristic(send);
+    }
+
     // ACTION_GATT_CONNECTED: connected to a GATT server.
     // ACTION_GATT_DISCONNECTED: disconnected from a GATT server.
     // ACTION_GATT_SERVICES_DISCOVERED: discovered GATT services.
@@ -443,39 +466,28 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     return;
                 }
 
-                Log.i("Update", "onReceive: " + gattServices.toString());
+//                Log.i("Update", "onReceive: " + gattServices.toString());
 
-                for (BluetoothGattService gattService : gattServices) {
-
-                    List<BluetoothGattCharacteristic> gattCharacteristics =
-                            gattService.getCharacteristics();
-                    // Loops through available Characteristics.
-                    for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
-                        String uuid = gattCharacteristic.getUuid().toString();
-                        //if(uuid.equals(dataCharacteristicUUID)){
-                        dataCharacteristic = gattCharacteristic;
-                        mBLEService.readCharacteristic(gattCharacteristic);
-                        //}
-                        Log.d("DEBUG", "PRINT UUIDS: " + uuid);
-                    }
-                }
+//                for (BluetoothGattService gattService : gattServices) {
+//
+//                    List<BluetoothGattCharacteristic> gattCharacteristics =
+//                            gattService.getCharacteristics();
+//                    // Loops through available Characteristics.
+//                    for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
+//                        String uuid = gattCharacteristic.getUuid().toString();
+//                        //if(uuid.equals(dataCharacteristicUUID)){
+//                        dataCharacteristic = gattCharacteristic;
+//                        mBLEService.readCharacteristic(gattCharacteristic);
+//                        //}
+//                        Log.d("DEBUG", "PRINT UUIDS: " + uuid);
+//                    }
+//                }
 
                 // Show all the supported services and characteristics on the
                 // user interface.
                 //displayGattServices(mBluetoothLeService.getSupportedGattServices());
 
-                // Send updated time and date every time summary is opened
-                Date now = new Date();
-
-                SimpleDateFormat ft = new SimpleDateFormat ("HH:mm:ss", Locale.US);
-                String timeString = ft.format(now);
-                byte[] send = timeString.getBytes(StandardCharsets.UTF_8);
-                mBLEService.writeRXCharacteristic(send);
-
-                ft = new SimpleDateFormat ("dd/MM/YYYY", Locale.US);
-                timeString = ft.format(now);
-                send = timeString.getBytes(StandardCharsets.UTF_8);
-                mBLEService.writeRXCharacteristic(send);
+                syncWatch();
             } else if (BLEService.ACTION_DATA_AVAILABLE.equals(action)) {
                 byte[] rcv = intent.getByteArrayExtra(BLEService.EXTRA_DATA);
                 if (rcv.length % 4 == 0) {
@@ -794,7 +806,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 Regions.fromName(getString(R.string.cognito_region)));
         userPool.getCurrentUser().signOut();
         finish();
-        Intent splashScreen = new Intent(getApplicationContext(), MainActivity.class);
-        startActivity(splashScreen);
+        Intent loginScreen = new Intent(getApplicationContext(), LoginActivity.class);
+        startActivity(loginScreen);
+    }
+    @Override
+    public void onBackPressed() {
+        //don't allow users to press back
     }
 }

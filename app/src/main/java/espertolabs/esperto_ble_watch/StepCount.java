@@ -69,16 +69,18 @@ public class StepCount extends Observable{
 
     public void addTotalDailySteps(String formattedDateAndTime, Integer steps) {
         if (this.totalDailySteps != null) {
-            Integer totalDailySteps = this.totalDailySteps.get(formattedDateAndTime);
+//            Integer totalDailySteps = this.totalDailySteps.get(formattedDateAndTime);
             Integer newTotalDailySteps;
 
-            if (totalDailySteps != null) {
-                // Total has already been recorded for this day, append to this
-                newTotalDailySteps = totalDailySteps + steps;
-            } else {
-                // Total has not been recorded yet for this day, this will be the initial value
-                newTotalDailySteps = steps;
-            }
+//            if (totalDailySteps != null) {
+//                // Total has already been recorded for this day, append to this
+//                newTotalDailySteps = totalDailySteps + steps;
+//            } else {
+//                // Total has not been recorded yet for this day, this will be the initial value
+//                newTotalDailySteps = steps;
+//            }
+
+            newTotalDailySteps = steps;
 
             this.totalDailySteps.put(formattedDateAndTime, newTotalDailySteps);
             setChanged();
