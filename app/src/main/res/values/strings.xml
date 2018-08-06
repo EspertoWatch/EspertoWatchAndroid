@@ -4,7 +4,7 @@
     <string name="team_alt">Esperto</string>
     <string name="title_activity_register">Register</string>
     <string name="activity_scan">Select a Device</string>
-    <string name="app_desc_top">Wireless. Wearable. Open Source</string>
+    <string name="app_desc_top">Wireless. Wearable. Open Source.</string>
 
     <!-- Strings related to Login Activity -->
     <string name="prompt_first_name">First Name</string>
