@@ -791,7 +791,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 Regions.fromName(getString(R.string.cognito_region)));
         userPool.getCurrentUser().signOut();
         finish();
-        Intent splashScreen = new Intent(getApplicationContext(), MainActivity.class);
-        startActivity(splashScreen);
+        Intent loginScreen = new Intent(getApplicationContext(), LoginActivity.class);
+        startActivity(loginScreen);
+    }
+    @Override
+    public void onBackPressed() {
+        //don't allow users to press back
     }
 }

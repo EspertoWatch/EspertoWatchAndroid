@@ -67,11 +67,6 @@ public class LoginActivity extends AppCompatActivity {
                 getString(R.string.cognito_client_secret),
                 Regions.fromName(getString(R.string.cognito_region)));
 
-        CognitoUser currentUser = userPool.getCurrentUser();
-        if(currentUser != null){
-            currentUser.getSessionInBackground(authenticationHandler);
-        }
-
         //check if Bluetooth is enabled
         BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (mBluetoothAdapter != null) {
@@ -251,5 +246,9 @@ public class LoginActivity extends AppCompatActivity {
         } else {
             Toast.makeText(this, getString(R.string.internet_required), Toast.LENGTH_SHORT).show();
         }
+    }
+    @Override
+    public void onBackPressed() {
+        //don't allow users to press back
     }
 }
