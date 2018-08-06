@@ -1,38 +1,49 @@
 package espertolabs.esperto_ble_watch;
 
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.PrimaryKey;
+import android.util.Log;
+
 import java.util.HashMap;
 import java.util.Observable;
-import java.util.Set;
 
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBAttribute;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBHashKey;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBIgnore;
-import com.amazonaws.mobile.client.AWSMobileClient;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBTable;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.google.common.collect.Table;
-
-//@DynamoDBTable(tableName="espertowatch-mobilehub-1699109079-HeartRate")
+@Entity
 public class HeartRate extends Observable{
 
-    private String username;
+    @PrimaryKey(autoGenerate = true)
+    // Key for SQlite DB, do not modify
+    private int uId;
+    private String userId;
     private int currentHR;
-    private Set<Integer> dailyHR;
-    private HashMap<String, Integer> avgDailyHR;
+    // Key: "dd-MM-YYYY kk", where kk is the current hour of the day from 1 to 24
+    // Value: The average heart rate for that hour
+    private HashMap<String, Float> avgHourlyHR;
 
-    //avgDailyHR is what we will actually be using (since our dynamoDB tables use a hashmap)
-    //just keeping dailyHR cause all of the graphs currently depend on it
+    // For internal app use only, used to calculate the avg, not uploaded to server
+    private HashMap<String, Integer> avgHourlyHRCount;
 
-    //@DynamoDBHashKey(attributeName = "username")
-    public String getUsername() {
-        return username;
+    HeartRate() {
+        this.currentHR = 0;
+        this.avgHourlyHR = new HashMap<>();
+        this.avgHourlyHRCount = new HashMap<>();
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public int getUId() {
+        return uId;
     }
 
-    //@DynamoDBAttribute(attributeName = "currentHR")
+    public void setUId(int uId) {
+        this.uId = uId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
     public int getCurrentHR() {
         return currentHR;
     }
@@ -43,25 +54,65 @@ public class HeartRate extends Observable{
         notifyObservers();
     }
 
-    //@DynamoDBAttribute(attributeName = "dailyHR")
-    public Set<Integer> getDailyHR() {
-        return dailyHR;
+    public HashMap<String, Integer> getAvgHourlyHRCount() {
+        return avgHourlyHRCount;
     }
 
-    public void setDailyHR(Set<Integer> dailyHR) {
-        this.dailyHR = dailyHR;
+    public void setAvgHourlyHRCount(HashMap<String, Integer> avgHourlyHRCount) {
+        this.avgHourlyHRCount = avgHourlyHRCount;
         setChanged();
         notifyObservers();
     }
 
-    public HashMap<String, Integer> getAvgDailyHR() {
-        return avgDailyHR;
+    private void incrAvgHourlyHRCount(String formattedDateAndTime) {
+        if (this.avgHourlyHRCount != null) {
+            Integer heartRateCount = this.avgHourlyHRCount.get(formattedDateAndTime);
+            Integer newHeartRateCount;
+
+            if (heartRateCount != null) {
+                // Avg count has already been recorded for this hour, increment
+                newHeartRateCount = heartRateCount + 1;
+            } else {
+                // Avg count has not been recorded yet for this hour, this will be the initial value
+                newHeartRateCount = 1;
+            }
+
+            this.avgHourlyHRCount.put(formattedDateAndTime, newHeartRateCount);
+            setChanged();
+            notifyObservers();
+        }
     }
 
-    public void setAvgDailyHR(HashMap<String, Integer> avgDailyHR) {
-        this.avgDailyHR = avgDailyHR;
+    public HashMap<String, Float> getAvgHourlyHR() {
+        return avgHourlyHR;
+    }
+
+    public void setAvgHourlyHR(HashMap<String, Float> avgHourlyHR) {
+        this.avgHourlyHR = avgHourlyHR;
         setChanged();
         notifyObservers();
+    }
+
+    public void addAvgHourlyHR(String formattedDateAndTime, Integer heartRate) {
+        if (this.avgHourlyHR != null) {
+            incrAvgHourlyHRCount(formattedDateAndTime);
+            Float heartRateAvg = this.avgHourlyHR.get(formattedDateAndTime);
+            Integer heartRateCount = this.avgHourlyHRCount.get(formattedDateAndTime);
+            Float newHeartRateAvg;
+
+            if (heartRateAvg != null) {
+                // Avg has already been recorded for this hour, append to this avg
+                float avgWeight = 1/(float) heartRateCount;
+                newHeartRateAvg = (heartRateAvg * (1-avgWeight)) + (heartRate * (avgWeight));
+            } else {
+                // Avg has not been recorded yet for this hour, this will be the initial value
+                newHeartRateAvg = (float) heartRate;
+            }
+
+            this.avgHourlyHR.put(formattedDateAndTime, newHeartRateAvg);
+            setChanged();
+            notifyObservers();
+        }
     }
 
 }

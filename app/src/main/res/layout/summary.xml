@@ -56,4 +56,28 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.6"
         app:srcCompat="@drawable/ic_steps_black_24dp" />
+
+    <TextView
+        android:id="@+id/heartRateDelta"
+        android:layout_width="wrap_content"
+        android:layout_height="20dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Loading..."
+        app:layout_constraintEnd_toEndOf="@+id/heartRateNum"
+        app:layout_constraintStart_toStartOf="@+id/heartRateNum"
+        app:layout_constraintTop_toBottomOf="@+id/heartRateNum" />
+
+    <TextView
+        android:id="@+id/stepsDelta"
+        android:layout_width="wrap_content"
+        android:layout_height="20dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Loading..."
+        app:layout_constraintEnd_toEndOf="@+id/stepCount"
+        app:layout_constraintStart_toStartOf="@+id/stepCount"
+        app:layout_constraintTop_toBottomOf="@+id/stepCount" />
 </android.support.constraint.ConstraintLayout>

@@ -1,6 +1,7 @@
 package espertolabs.esperto_ble_watch;
 
 import android.Manifest;
+import android.arch.persistence.room.Room;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
@@ -57,17 +58,15 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
-import java.util.Set;
 
 
-//TODO:: pass in internet information to adjust views
-//TODO:: connect to BLE device here
 public class SummaryActivity extends AppCompatActivity implements Observer {
-
 
     private TextView mTextMessage;
     private UserAccount user = new UserAccount();
@@ -80,8 +79,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     private String dataCharacteristicUUID = "00002a05-0000-1000-8000-00805f9b34fb";
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 987;
     private BluetoothGattCharacteristic dataCharacteristic;
-    //DynamoDBMapper dynamoDBMapper; //map tables to Java classes
-    //AmazonDynamoDBClient dynamoDBClient;
     private boolean summaryDisplay = false;
     private boolean detailedHeart = false;
     private boolean detailedStep = false;
@@ -96,11 +93,16 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     //Summary values
     TextView hr_current;
     TextView steps_current;
+    TextView hr_delta;
+    TextView steps_delta;
     TextView section_title;
 
     //instantiate api gateway handler
     final ApiGatewayHandler handler = new ApiGatewayHandler();
     String userId;
+
+    HeartRateDB hr_db;
+    StepCountDB steps_db;
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -117,14 +119,14 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                    // TODO updateUI("Summary");
                     return true;
                 case R.id.navigation_heart:
-                    displayHeart();
+                    displayHeart(false);
                     detailedHeart = true;
                     summaryDisplay = false;
                     detailedStep = false;
                     // TODO updateUI("Heart Rate");
                     return true;
                 case R.id.navigation_steps:
-                    displaySteps();
+                    displaySteps(false);
                     detailedHeart = false;
                     detailedStep = true;
                     summaryDisplay = false;
@@ -139,21 +141,23 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_summary);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        Toolbar toolbar = findViewById(R.id.my_toolbar);
         setSupportActionBar(toolbar);
-        Drawable drawable = ContextCompat.getDrawable(getApplicationContext(),R.drawable.settings_ic);
+//        Drawable drawable = ContextCompat.getDrawable(getApplicationContext(),R.drawable.settings_ic);
 
-        messageUser = (TextView) findViewById(R.id.messageUser);
-        bleConnection = (TextView) findViewById(R.id.bleConnection);
-        heartChart = (LineChart)findViewById(R.id.heartChart); //used to display daily HR
-        stepChart = (BarChart) findViewById(R.id.stepChart); //used to display daily stepCount
-        flipper = (ViewFlipper)findViewById(R.id.vf);
-        hr_current = (TextView) findViewById(R.id.heartRateNum);
-        steps_current = (TextView) findViewById(R.id.stepCount);
-        section_title = (TextView) findViewById(R.id.sectionTitle);
+        messageUser = findViewById(R.id.messageUser);
+        bleConnection = findViewById(R.id.bleConnection);
+        heartChart = findViewById(R.id.heartChart); //used to display daily HR
+        stepChart = findViewById(R.id.stepChart); //used to display daily stepCount
+        flipper = findViewById(R.id.vf);
+        hr_current = findViewById(R.id.heartRateNum);
+        steps_current = findViewById(R.id.stepCount);
+        hr_delta = findViewById(R.id.heartRateDelta);
+        steps_delta = findViewById(R.id.stepsDelta);
+        section_title = findViewById(R.id.sectionTitle);
 
-        mTextMessage = (TextView) findViewById(R.id.message);
-        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
+        mTextMessage = findViewById(R.id.message);
+        BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
         //Check whether BLE is supported
@@ -174,8 +178,15 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         registerReceiver(mCallReceiver, new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED));
         registerReceiver(mSMSReceiver, new IntentFilter(Telephony.Sms.Intents.SMS_RECEIVED_ACTION));
 
+        // Storage init
         SharedPreferences sharedPref = getApplicationContext().getSharedPreferences("userId", Context.MODE_PRIVATE);
         userId = sharedPref.getString("USER_ID", "");
+
+        hr_db = Room.databaseBuilder(getApplicationContext(),
+                HeartRateDB.class, "HeartRate").build();
+
+        steps_db = Room.databaseBuilder(getApplicationContext(),
+                StepCountDB.class, "StepCount").build();
 
         //retrieve intent
         Intent userIntent = getIntent();
@@ -189,6 +200,9 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 signOut();
             }
         });
+
+        userHR.setUserId(user.getUsername());
+        userSteps.setUserId(user.getUsername());
 
         //retrieve data
         getHRDB();
@@ -211,6 +225,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             }
         }
     }
+
     public void greetUser(){
         String greetText = "Welcome " + user.getName() + "!";
         messageUser.setText(greetText);
@@ -218,11 +233,12 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
     //TODO:: add a loading screen to keep user occupied before data display
 
-    private void displayHeart(){
-        flipper.setDisplayedChild(1);
-        section_title.setText("Average Heart Rate (Last 30 Days)");
-        if(userHR.getDailyHR() != null){
-
+    private void displayHeart(boolean updateOnly){
+        if (!updateOnly) {
+            flipper.setDisplayedChild(1);
+            section_title.setText("Average Heart Rate (Last 30 Days)");
+        }
+        if (userHR.getAvgHourlyHR().size() != 0){
             List<Entry> entries = retrieveHeartRateData();
             LineDataSet dataSet = new LineDataSet(entries, "Heart Rate"); // add entries to dataset
 
@@ -261,43 +277,46 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     private List<Entry> retrieveHeartRateData(){
        //Retrieve data here
         List<Entry> entries = new ArrayList<Entry>();
-        // TODO: change from Set since it does not allow for duplicate entries
-        Set<Integer> dailyHR = userHR.getDailyHR();
+        HashMap<String, Float> avgHourlyHR = userHR.getAvgHourlyHR();
         int timeCounter = 8; //start at 8am TODO:: add actual times once I have the esperto watch (24 h clock)
-        for(Integer i: dailyHR){
+        for(Map.Entry<String, Float> entry : avgHourlyHR.entrySet()){
             // turn your data into Entry objects
-            entries.add(new Entry(timeCounter, i)); //wrap each data point into Entry objects
+            entries.add(new Entry(timeCounter, entry.getValue())); //wrap each data point into Entry objects
             timeCounter++;
         }
         return entries;
     }
 
     //TODO:: adjust color of graph if goal achieved
-    private void displaySteps(){
-        flipper.setDisplayedChild(2);
-        section_title.setText("Daily Step Count (Last 30 Days)");
-        BarDataSet dataSet = retrieveStepData();
-        ArrayList<IBarDataSet> dataSets = new ArrayList<IBarDataSet>();
-        dataSet.setColors(getResources().getColor(R.color.navbar));
-        dataSet.setValueTextColor(getResources().getColor(R.color.colorPrimary)); // styling
-        BarData barData = new BarData(dataSet);
-        YAxis leftAxis = stepChart.getAxisLeft();
-        leftAxis.setDrawAxisLine(false);
-        leftAxis.setDrawGridLines(false);
-        leftAxis.setDrawZeroLine(false);
-        stepChart.getXAxis().setDrawGridLines(false);
-        stepChart.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
-        stepChart.getAxisRight().setEnabled(false);
-        YAxis rightAxis = stepChart.getAxisLeft();
-        leftAxis.setDrawAxisLine(false);
-        leftAxis.setDrawGridLines(false);
-        dataSet.setDrawValues(false);
+    private void displaySteps(boolean updateOnly){
+        if (!updateOnly) {
+            flipper.setDisplayedChild(2);
+            section_title.setText("Daily Step Count (Last 30 Days)");
+        }
+        if (userSteps.getTotalDailySteps().size() != 0) {
+            BarDataSet dataSet = retrieveStepData();
+            ArrayList<IBarDataSet> dataSets = new ArrayList<IBarDataSet>();
+            dataSet.setColors(getResources().getColor(R.color.navbar));
+            dataSet.setValueTextColor(getResources().getColor(R.color.colorPrimary)); // styling
+            BarData barData = new BarData(dataSet);
+            YAxis leftAxis = stepChart.getAxisLeft();
+            leftAxis.setDrawAxisLine(false);
+            leftAxis.setDrawGridLines(false);
+            leftAxis.setDrawZeroLine(false);
+            stepChart.getXAxis().setDrawGridLines(false);
+            stepChart.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
+            stepChart.getAxisRight().setEnabled(false);
+            YAxis rightAxis = stepChart.getAxisLeft();
+            leftAxis.setDrawAxisLine(false);
+            leftAxis.setDrawGridLines(false);
+            dataSet.setDrawValues(false);
 
-        stepChart.getDescription().setEnabled(false);
-        stepChart.getLegend().setEnabled(false);
-        dataSets.add(dataSet);
-        stepChart.setData(barData);
-        stepChart.invalidate(); // refresh
+            stepChart.getDescription().setEnabled(false);
+            stepChart.getLegend().setEnabled(false);
+            dataSets.add(dataSet);
+            stepChart.setData(barData);
+            stepChart.invalidate(); // refresh
+        }
     }
 
     //call database to retrieve heart data
@@ -308,15 +327,14 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         ArrayList<BarEntry> yVals = new ArrayList<BarEntry>();
         float counter = 0;
         float timeCounter = 8; //start at 8am TODO:: add actual times once I have the esperto watch (24 h clock)
-        // TODO: change from Set since it does not allow for duplicate entries
-        Set<Integer> dailySteps = userSteps.getDailySteps();
-        for(Integer i:dailySteps){
+        HashMap<String, Integer> totalDailySteps = userSteps.getTotalDailySteps();
+        for(Map.Entry<String, Integer> entry : totalDailySteps.entrySet()){
             // turn your data into Entry objects
             int hours = (int)timeCounter;
             int min = (int)(timeCounter - hours) *60;
             String time = String.format("%d:%02d",hours, min).toString();
 
-            yVals.add(new BarEntry(counter, i)); //wrap each data point into Entry objects
+            yVals.add(new BarEntry(counter, entry.getValue())); //wrap each data point into Entry objects
             xVals.add(time);
             timeCounter = timeCounter + (float)0.5;
             counter++;
@@ -382,9 +400,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
+            boolean connectedOnce = false;
             if (BLEService.ACTION_GATT_CONNECTED.equals(action)) {
                 Log.i("Update", "Device connected");
                 mConnected = true;
+                connectedOnce = true;
                 invalidateOptionsMenu();
                 bleConnection.setText("Watch connected");
                 bleConnection.setTextColor(Color.GREEN);
@@ -394,13 +414,15 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 Toast.makeText(getApplicationContext(), getString(R.string.watch_disconnected), Toast.LENGTH_SHORT).show();
                 invalidateOptionsMenu();
 
-                Date now = new Date();
+                if (connectedOnce == true) {
+                    Date now = new Date();
+                    SimpleDateFormat ft = new SimpleDateFormat ("hh:mm:ss a dd/MM/YYYY");
+                    String lastConnectedTime = ft.format(now);
 
-                SimpleDateFormat ft = new SimpleDateFormat ("hh:mm:ss a dd/MM/YYYY");
-                String timeString = ft.format(now);
+                    bleConnection.setText("Watch disconnected\nLast seen at " + lastConnectedTime);
+                    bleConnection.setTextColor(Color.RED);
+                }
 
-                bleConnection.setText("Watch disconnected\nLast connected at " + timeString);
-                bleConnection.setTextColor(Color.RED);
                 final Handler connectHandler = new Handler();
                 connectHandler.postDelayed(new Runnable() {
                     @Override
@@ -420,7 +442,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 if (gattServices == null) {
                     return;
                 }
-                Log.e("Update", "onReceive: " + gattServices.toString());
+
+                Log.i("Update", "onReceive: " + gattServices.toString());
 
                 for (BluetoothGattService gattService : gattServices) {
 
@@ -444,49 +467,47 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 // Send updated time and date every time summary is opened
                 Date now = new Date();
 
-                SimpleDateFormat ft = new SimpleDateFormat ("HH:mm:ss");
+                SimpleDateFormat ft = new SimpleDateFormat ("HH:mm:ss", Locale.US);
                 String timeString = ft.format(now);
                 byte[] send = timeString.getBytes(StandardCharsets.UTF_8);
                 mBLEService.writeRXCharacteristic(send);
 
-                ft = new SimpleDateFormat ("dd/MM/YYYY");
+                ft = new SimpleDateFormat ("dd/MM/YYYY", Locale.US);
                 timeString = ft.format(now);
                 send = timeString.getBytes(StandardCharsets.UTF_8);
                 mBLEService.writeRXCharacteristic(send);
             } else if (BLEService.ACTION_DATA_AVAILABLE.equals(action)) {
                 byte[] rcv = intent.getByteArrayExtra(BLEService.EXTRA_DATA);
-                Log.i("DATA","AVAIL");
-                Log.i("DATA RCV'D",Arrays.toString(rcv));
-                int heartRate = rcv[0];
-                int stepCount = ( ( rcv[1] & 0xFF ) << 8 ) | ( rcv[0] );
+                if (rcv.length % 4 == 0) {
+                    Log.i("BLE data rcv'd", Arrays.toString(rcv));
+                    for (int i = 0; i < rcv.length; i += 4) {
+                        if (rcv[i+3] == 0) {
+                            int heartRate = rcv[i];
+                            int stepCount = ( ( rcv[i+1] & 0xFFFF ) << 8 ) | ( rcv[i+2] );
 
-                Log.i("Heart rate", Integer.toString(heartRate));
-                Log.i("Step count", Integer.toString(stepCount));
+                            Log.i("Heart rate", Integer.toString(heartRate));
+                            Log.i("Step count", Integer.toString(stepCount));
 
-                storeHeartRate(heartRate);
-                storeStepCount(stepCount);
-
-//                bleConnection.setText(new String(rcv));
-
-                //TODO:: uncomment code with functional BLE module
-
-                //Log.i("data",intent.getResources().getStringExtra(BLEService.EXTRA_DATA));
-                //String characteristic = intent.getResources().getStringExtra("characteristic");
-                //if(characteristic.equals(dataCharacteristicUUID)){
-                   // mBLEService.readCharacteristic(dataCharacteristic);
-                //}
-
-                /*
-                int heartRate = data & 0x0000FF;
-                int stepCount = (data >> 8) 0x00FFFF;
-                storeHeartRate(heartRate); //update
-                storeStepCount(stepCount); //update in database and in UI display
-                updateHeartRateUI(heartRate);
-                updateStepCount(UI); //store in global variables - depends on what is being displayed in the UI
-                 */
+                            onBLEReceive(heartRate, stepCount);
+                        } else {
+                            Log.e("BLE data bad check byte", Integer.toString((int) rcv[i+3]));
+                        }
+                    }
+                } else {
+                    Log.e("BLE data bad length", Arrays.toString(rcv));
+                }
             }
         }
     };
+
+    private void onBLEReceive(int heartRate, int stepCount) {
+        updateHeartUI(heartRate);
+        updateStepsUI(stepCount);
+
+        // Store after receive because UI updates depend on last value of HR and Step Count
+        storeHeartRate(heartRate);
+        storeStepCount(stepCount);
+    }
 
     private final BroadcastReceiver mCallReceiver = new BroadcastReceiver() {
         @Override
@@ -566,6 +587,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         unregisterReceiver(mCallReceiver);
         unregisterReceiver(mSMSReceiver);
         unbindService(mConnection);
+        hr_db.close();
+        // steps_db.close();
     }
 
     @Override
@@ -585,15 +608,20 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         return intentFilter;
     }
 
-    //TODO:: add in with actual BLE watch
     public void storeHeartRate(int heartRate){
+        Date now = new Date();
+        SimpleDateFormat ft = new SimpleDateFormat ("dd-MM-YYYY kk", Locale.US);
+        String timeString = ft.format(now);
+        userHR.addAvgHourlyHR(timeString, heartRate);
         new Thread(new Runnable(){
             @Override
             public void run(){
                 JSONObject userJsonObject = new JSONObject();
+                JSONObject userJsonMap = new JSONObject(userHR.getAvgHourlyHR());
                 try {
                     userJsonObject.put("userId", userId);
                     userJsonObject.put("currentHR", heartRate);
+                    userJsonObject.put("avgHourlyHR", userJsonMap);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -604,20 +632,26 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
                 if(response != ""){
                     Log.i("HR store", "success");
+                    hr_db.HeartRateDAO().insertHeartRate(userHR);
                 }
             }
         }).start();
     }
 
-    //TODO:: add in with actual BLE watch
     public void storeStepCount(int stepCount) {
+        Date now = new Date();
+        SimpleDateFormat ft = new SimpleDateFormat ("dd-MM-YYYY", Locale.US);
+        String timeString = ft.format(now);
+        userSteps.addTotalDailySteps(timeString, stepCount);
         new Thread(new Runnable(){
             @Override
             public void run(){
                 JSONObject userJsonObject = new JSONObject();
+                JSONObject userJsonMap = new JSONObject(userSteps.getTotalDailySteps());
                 try {
                     userJsonObject.put("userId", userId);
                     userJsonObject.put("currentSteps", stepCount);
+                    userJsonObject.put("totalDailySteps", userJsonMap);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -628,6 +662,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
                 if(response != ""){
                     Log.i("Step count store", "success");
+                   steps_db.StepCountDAO().insertStepCount(userSteps);
                 }
             }
         }).start();
@@ -638,19 +673,27 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                HeartRate userHRTemp = hr_db.HeartRateDAO().getUserHeartRate(user.getUsername());
+                if (userHRTemp == null) {
+                    hr_db.HeartRateDAO().insertHeartRate(userHR);
+                } else {
+                    userHR = userHRTemp;
+                }
                 //send request via apigateway
                 String response = handler.getHeartRate(userId);
+                Log.i("HR obj response", response);
                 Gson g = new Gson();
                 if(response != ""){
                     HeartRate hr = g.fromJson(response, HeartRate.class);
+                    // This also sets the currentHR of userHR
                     updateHeartUI(hr.getCurrentHR());
-                } else{
+                    if (hr.getAvgHourlyHR().size() != 0) {
+                        userHR.setAvgHourlyHR(hr.getAvgHourlyHR());
+                    }
+                    hr_db.HeartRateDAO().insertHeartRate(userHR);
+                } else {
                     updateHeartUI(0);
                 }
-                //insert fake dailyHR vals for now
-                //insert some fake vals for now
-                Set<Integer> dailyHR = new HashSet<>(Arrays.asList(70, 60, 80, 100, 130, 61, 51, 62, 84, 102, 138, 65, 52, 60, 85, 111, 139, 62, 51, 67, 84, 120, 131, 68, 54));
-                userHR.setDailyHR(dailyHR);
             }
         }).start();
     }
@@ -659,8 +702,21 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                userHR.setCurrentHR(currentHr);
-                hr_current.setText(currentHr != 0 ? Integer.toString(userHR.getCurrentHR()) + " BPM" : "No Data");
+                if (currentHr > 0) {
+                    displayHeart(true);
+                    String dynamicPart;
+                    int last = userHR.getCurrentHR();
+                    int delta = currentHr - last;
+                    userHR.setCurrentHR(currentHr);
+                    if (delta == 0) {
+                        dynamicPart = "No change";
+                    } else {
+                        dynamicPart = Integer.toString(Math.abs(delta));
+                        dynamicPart += delta > 0 ?  " Up" : " Down";
+                    }
+                    hr_delta.setText(dynamicPart + " from last");
+                    hr_current.setText(currentHr != 0 ? Integer.toString(userHR.getCurrentHR()) + " BPM" : "No Data");
+                }
             }
         });
     }
@@ -669,8 +725,21 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                userSteps.setCurrentSteps(currentSteps);
-                steps_current.setText(currentSteps != 0 ? Integer.toString(userSteps.getCurrentSteps()) + " steps" : "No Data");
+                if (currentSteps > 0) {
+                    displaySteps(true);
+                    String dynamicPart;
+                    int last = userSteps.getCurrentSteps();
+                    int delta = currentSteps - last;
+                    userSteps.setCurrentSteps(currentSteps);
+                    if (delta == 0) {
+                        dynamicPart = "No change";
+                    } else {
+                        dynamicPart = Integer.toString(Math.abs(delta));
+                        dynamicPart += delta > 0 ?  " Up" : " Down";
+                    }
+                    steps_delta.setText(dynamicPart + " from last");
+                    steps_current.setText(currentSteps != 0 ? Integer.toString(userSteps.getCurrentSteps()) + " steps" : "No Data");
+                }
             }
         });
     }
@@ -680,20 +749,26 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                StepCount userStepsTemp = steps_db.StepCountDAO().getUserStepCount(user.getUsername());
+                if (userStepsTemp == null) {
+                    steps_db.StepCountDAO().insertStepCount(userSteps);
+                } else {
+                    userSteps = userStepsTemp;
+                }
                 //send request via apigateway
                 String response = handler.getStepCount(userId);
+                Log.i("Steps obj response", response);
                 Gson g = new Gson();
                 if(response != ""){
                     StepCount sc = g.fromJson(response, StepCount.class);
-                    userSteps.setCurrentSteps(sc.getCurrentSteps());
-                } else{
+                    updateStepsUI(sc.getCurrentSteps());
+                    if (sc.getTotalDailySteps().size() != 0) {
+                        userSteps.setTotalDailySteps(sc.getTotalDailySteps());
+                    }
+                    steps_db.StepCountDAO().insertStepCount(userSteps);
+                } else {
                     updateStepsUI(0);
                 }
-
-                //insert some fake vals for now
-                Set<Integer> dailySteps = new HashSet<>(Arrays.asList(8000, 9000, 10000, 9000, 8200, 9005, 10500, 9580, 8100, 9600, 10250, 9890, 8012));
-                userSteps.setDailySteps(dailySteps);
-                userSteps.setUsername(user.getUsername());
             }
         }).start();
     }

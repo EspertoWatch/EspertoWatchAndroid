@@ -1,38 +1,46 @@
 package espertolabs.esperto_ble_watch;
 
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.PrimaryKey;
+
 import java.util.HashMap;
 import java.util.Observable;
-import java.util.Set;
+import java.util.List;
 
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBAttribute;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBHashKey;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBIgnore;
-import com.amazonaws.mobile.client.AWSMobileClient;
-import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBTable;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.google.common.collect.Table;
-
-//@DynamoDBTable(tableName="espertowatch-mobilehub-1699109079-StepCount")
+@Entity
 public class StepCount extends Observable{
 
-    private String username;
+    @PrimaryKey(autoGenerate = true)
+    // Key for SQlite DB, do not modify
+    private int uId;
+
+    private String userId;
     private int currentSteps;
-    private Set<Integer> dailySteps;
+    // Key: "dd-MM-YYYY"
+    // Value: The total steps for that day
     private HashMap<String, Integer> totalDailySteps;
 
-    //totalDailySteps is what we will actually be using (since our dynamoDB tables use a hashmap)
-    //just keeping dailySteps cause all of the graphs currently depend on it
-
-    //@DynamoDBHashKey(attributeName = "username")
-    public String getUsername() {
-        return username;
+    StepCount() {
+        this.currentSteps = 0;
+        this.totalDailySteps = new HashMap<>();
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public int getUId() {
+        return uId;
     }
 
-    //@DynamoDBAttribute(attributeName = "currentSteps")
+    public void setUId(int uId) {
+        this.uId = uId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
     public int getCurrentSteps() {
         return currentSteps;
     }
@@ -43,13 +51,8 @@ public class StepCount extends Observable{
         notifyObservers();
     }
 
-    //@DynamoDBAttribute(attributeName = "dailySteps")
-    public Set<Integer> getDailySteps() {
-        return dailySteps;
-    }
-
-    public void setDailySteps(Set<Integer> dailySteps) {
-        this.dailySteps = dailySteps;
+    public void addCurrentSteps(int currentSteps) {
+        this.currentSteps += currentSteps;
         setChanged();
         notifyObservers();
     }
@@ -62,6 +65,25 @@ public class StepCount extends Observable{
         this.totalDailySteps = totalDailySteps;
         setChanged();
         notifyObservers();
+    }
+
+    public void addTotalDailySteps(String formattedDateAndTime, Integer steps) {
+        if (this.totalDailySteps != null) {
+            Integer totalDailySteps = this.totalDailySteps.get(formattedDateAndTime);
+            Integer newTotalDailySteps;
+
+            if (totalDailySteps != null) {
+                // Total has already been recorded for this day, append to this
+                newTotalDailySteps = totalDailySteps + steps;
+            } else {
+                // Total has not been recorded yet for this day, this will be the initial value
+                newTotalDailySteps = steps;
+            }
+
+            this.totalDailySteps.put(formattedDateAndTime, newTotalDailySteps);
+            setChanged();
+            notifyObservers();
+        }
     }
 
 }
