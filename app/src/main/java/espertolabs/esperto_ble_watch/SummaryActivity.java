@@ -30,6 +30,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
@@ -95,6 +96,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     TextView steps_current;
     TextView hr_delta;
     TextView steps_delta;
+    ImageView logoImage;
 
     //instantiate api gateway handler
     final ApiGatewayHandler handler = new ApiGatewayHandler();
@@ -148,9 +150,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         heartChart = findViewById(R.id.heartChart); //used to display daily HR
         stepChart = findViewById(R.id.stepChart); //used to display daily stepCount
         flipper = findViewById(R.id.vf);
+        logoImage = findViewById(R.id.logo);
         hr_current = findViewById(R.id.heartRateNum);
         steps_current = findViewById(R.id.stepCount);
         hr_delta = findViewById(R.id.heartRateDelta);
+        steps_delta = findViewById(R.id.stepsDelta);
         steps_delta = findViewById(R.id.stepsDelta);
 
         mTextMessage = findViewById(R.id.message);
@@ -196,6 +200,13 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             @Override
             public void onClick(View view) {
                 signOut();
+            }
+        });
+
+        logoImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                syncWatch();
             }
         });
 
@@ -388,6 +399,21 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         }
     };
 
+    void syncWatch() {
+        // Send updated time and date every time summary is opened
+        Date now = new Date();
+
+        SimpleDateFormat ft = new SimpleDateFormat ("HH:mm:ss", Locale.US);
+        String timeString = ft.format(now);
+        byte[] send = timeString.getBytes(StandardCharsets.UTF_8);
+        mBLEService.writeRXCharacteristic(send);
+
+        ft = new SimpleDateFormat ("dd/MM/YYYY", Locale.US);
+        timeString = ft.format(now);
+        send = timeString.getBytes(StandardCharsets.UTF_8);
+        mBLEService.writeRXCharacteristic(send);
+    }
+
     // ACTION_GATT_CONNECTED: connected to a GATT server.
     // ACTION_GATT_DISCONNECTED: disconnected from a GATT server.
     // ACTION_GATT_SERVICES_DISCOVERED: discovered GATT services.
@@ -440,39 +466,28 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     return;
                 }
 
-                Log.i("Update", "onReceive: " + gattServices.toString());
+//                Log.i("Update", "onReceive: " + gattServices.toString());
 
-                for (BluetoothGattService gattService : gattServices) {
-
-                    List<BluetoothGattCharacteristic> gattCharacteristics =
-                            gattService.getCharacteristics();
-                    // Loops through available Characteristics.
-                    for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
-                        String uuid = gattCharacteristic.getUuid().toString();
-                        //if(uuid.equals(dataCharacteristicUUID)){
-                        dataCharacteristic = gattCharacteristic;
-                        mBLEService.readCharacteristic(gattCharacteristic);
-                        //}
-                        Log.d("DEBUG", "PRINT UUIDS: " + uuid);
-                    }
-                }
+//                for (BluetoothGattService gattService : gattServices) {
+//
+//                    List<BluetoothGattCharacteristic> gattCharacteristics =
+//                            gattService.getCharacteristics();
+//                    // Loops through available Characteristics.
+//                    for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
+//                        String uuid = gattCharacteristic.getUuid().toString();
+//                        //if(uuid.equals(dataCharacteristicUUID)){
+//                        dataCharacteristic = gattCharacteristic;
+//                        mBLEService.readCharacteristic(gattCharacteristic);
+//                        //}
+//                        Log.d("DEBUG", "PRINT UUIDS: " + uuid);
+//                    }
+//                }
 
                 // Show all the supported services and characteristics on the
                 // user interface.
                 //displayGattServices(mBluetoothLeService.getSupportedGattServices());
 
-                // Send updated time and date every time summary is opened
-                Date now = new Date();
-
-                SimpleDateFormat ft = new SimpleDateFormat ("HH:mm:ss", Locale.US);
-                String timeString = ft.format(now);
-                byte[] send = timeString.getBytes(StandardCharsets.UTF_8);
-                mBLEService.writeRXCharacteristic(send);
-
-                ft = new SimpleDateFormat ("dd/MM/YYYY", Locale.US);
-                timeString = ft.format(now);
-                send = timeString.getBytes(StandardCharsets.UTF_8);
-                mBLEService.writeRXCharacteristic(send);
+                syncWatch();
             } else if (BLEService.ACTION_DATA_AVAILABLE.equals(action)) {
                 byte[] rcv = intent.getByteArrayExtra(BLEService.EXTRA_DATA);
                 if (rcv.length % 4 == 0) {
