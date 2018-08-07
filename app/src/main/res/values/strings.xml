@@ -56,6 +56,22 @@
     <string name="main_user">mmacmahon</string>
     <string name="esperto_device_name">Esperto</string>
 
+    <string-array name="hr_graph_options_array">
+        <item>Last 7 Days</item>
+        <item>Last Hour</item>
+        <item>Last 31 Days</item>
+        <item>Last Year</item>
+        <item>All</item>
+    </string-array>
+
+    <string-array name="steps_graph_options_array">
+        <item>Last 7 Days</item>
+        <item>Last Hour</item>
+        <item>Last 31 Days</item>
+        <item>Last Year</item>
+        <item>All</item>
+    </string-array>
+
     <!-- Strings related to Cognito -->
     <string name="cognito_web_domain">esperto-watch-app.auth.us-east-1.amazoncognito.com</string>
     <string name="cognito_client_id">3m4tc04cp9j5b6n19o9f4q9eqm</string>

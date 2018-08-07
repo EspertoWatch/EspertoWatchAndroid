@@ -16,7 +16,7 @@ public class StepCount extends Observable{
 
     private String userId;
     private int currentSteps;
-    // Key: "dd-MM-YYYY"
+    // Key: "YYYY-MM-dd"
     // Value: The total steps for that day
     private HashMap<String, Integer> totalDailySteps;
 

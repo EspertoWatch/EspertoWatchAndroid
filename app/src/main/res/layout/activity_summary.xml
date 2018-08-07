@@ -74,11 +74,15 @@
 
         <include
             android:id="@+id/include2"
-            layout="@layout/heart_rate" />
+            layout="@layout/heart_rate"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
         <include
             android:id="@+id/include3"
-            layout="@layout/steps" />
+            layout="@layout/steps"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
     </ViewFlipper>
 

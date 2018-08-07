@@ -15,7 +15,7 @@ public class HeartRate extends Observable{
     private int uId;
     private String userId;
     private int currentHR;
-    // Key: "dd-MM-YYYY kk", where kk is the current hour of the day from 1 to 24
+    // Key: "YYYY-MM-dd kk", where kk is the current hour of the day from 00 to 23
     // Value: The average heart rate for that hour
     private HashMap<String, Float> avgHourlyHR;
 
