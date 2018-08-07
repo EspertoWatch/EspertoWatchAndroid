@@ -121,21 +121,20 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     summaryDisplay = true;
                     detailedHeart = false;
                     detailedStep = false;
-                   // TODO updateUI("Summary");
                     return true;
                 case R.id.navigation_heart:
-                    displayHeart(false);
+//                    drawHeartRateGraph();
+                    flipper.setDisplayedChild(1);
                     detailedHeart = true;
                     summaryDisplay = false;
                     detailedStep = false;
-                    // TODO updateUI("Heart Rate");
                     return true;
                 case R.id.navigation_steps:
-                    displaySteps(false);
+//                    drawStepsGraph();
+                    flipper.setDisplayedChild(2);
                     detailedHeart = false;
                     detailedStep = true;
                     summaryDisplay = false;
-                    // TODO updateUI("Step Count");
                     return true;
             }
             return false;
@@ -221,6 +220,9 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         userHR.setUserId(user.getUsername());
         userSteps.setUserId(user.getUsername());
 
+//        drawHeartRateGraph();
+//        drawStepsGraph();
+
         //retrieve data
         getHRDB();
         getStepDB();
@@ -251,23 +253,13 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
     //TODO:: add a loading screen to keep user occupied before data display
 
-    private void displayHeart(boolean updateOnly){
-        if (!updateOnly) {
-            flipper.setDisplayedChild(1);
-        }
+    private void drawHeartRateGraph() {
         if (userHR.getAvgHourlyHR().size() != 0){
             List<Entry> entries = retrieveHeartRateData();
             LineDataSet dataSet = new LineDataSet(entries, "Heart Rate"); // add entries to dataset
 
-            dataSet.setDrawFilled(true);
             dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-            if (Utils.getSDKInt() >= 18) {
-                // fill drawable only supported on api level 18 and above
-                Drawable drawable = ContextCompat.getDrawable(this, R.drawable.fade_red);
-                dataSet.setFillDrawable(drawable);
-            } else {
-                dataSet.setFillColor(Color.BLACK);
-            }
+
             dataSet.setColors(getResources().getColor(R.color.colorPrimary));
             dataSet.setValueTextColor(getResources().getColor(R.color.colorPrimary)); // styling
             LineData lineData = new LineData(dataSet);
@@ -283,6 +275,23 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             leftAxis.setDrawGridLines(false);
             heartChart.getDescription().setEnabled(false);
             heartChart.getLegend().setEnabled(false);
+
+            heartChart.setData(lineData);
+            heartChart.invalidate(); // refresh
+        }
+    }
+
+    private void updateHeartRateGraph() {
+        if (userHR.getAvgHourlyHR().size() != 0){
+            List<Entry> entries = retrieveHeartRateData();
+            LineDataSet dataSet = new LineDataSet(entries, "Heart Rate"); // add entries to dataset
+
+            dataSet.setDrawFilled(true);
+            dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+
+            dataSet.setColors(getResources().getColor(R.color.colorPrimary));
+            dataSet.setValueTextColor(getResources().getColor(R.color.colorPrimary)); // styling
+            LineData lineData = new LineData(dataSet);
 
             heartChart.setData(lineData);
             heartChart.invalidate(); // refresh
@@ -305,10 +314,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     }
 
     //TODO:: adjust color of graph if goal achieved
-    private void displaySteps(boolean updateOnly){
-        if (!updateOnly) {
-            flipper.setDisplayedChild(2);
-        }
+    private void drawStepsGraph() {
         if (userSteps.getTotalDailySteps().size() != 0) {
             BarDataSet dataSet = retrieveStepData();
             ArrayList<IBarDataSet> dataSets = new ArrayList<IBarDataSet>();
@@ -335,8 +341,21 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         }
     }
 
+    private void updateStepsGraph() {
+        if (userSteps.getTotalDailySteps().size() != 0) {
+            BarDataSet dataSet = retrieveStepData();
+
+            dataSet.setColors(getResources().getColor(R.color.navbar));
+            dataSet.setValueTextColor(getResources().getColor(R.color.colorPrimary)); // styling
+
+            BarData barData = new BarData(dataSet);
+
+            stepChart.setData(barData);
+            stepChart.invalidate(); // refresh
+        }
+    }
+
     //call database to retrieve heart data
-    //TODO:: store in a local data class so I don't have to keep requesting the data
     private BarDataSet retrieveStepData(){
         //retrieve step data and format output
         ArrayList xVals = new ArrayList();
@@ -609,7 +628,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
     public void storeHeartRate(int heartRate){
         Date now = new Date();
-        SimpleDateFormat ft = new SimpleDateFormat ("dd-MM-YYYY kk", Locale.US);
+        SimpleDateFormat ft = new SimpleDateFormat ("YYYY-MM-dd kk", Locale.US);
         String timeString = ft.format(now);
         userHR.addAvgHourlyHR(timeString, heartRate);
         new Thread(new Runnable(){
@@ -639,7 +658,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
     public void storeStepCount(int stepCount) {
         Date now = new Date();
-        SimpleDateFormat ft = new SimpleDateFormat ("dd-MM-YYYY", Locale.US);
+        SimpleDateFormat ft = new SimpleDateFormat ("YYYY-MM-dd", Locale.US);
         String timeString = ft.format(now);
         userSteps.addTotalDailySteps(timeString, stepCount);
         new Thread(new Runnable(){
@@ -702,7 +721,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             @Override
             public void run() {
                 if (currentHr > 0) {
-                    displayHeart(true);
+                    drawHeartRateGraph();
                     String dynamicPart = "---";
                     int last = userHR.getCurrentHR();
                     int delta = currentHr - last;
@@ -726,7 +745,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             @Override
             public void run() {
                 if (currentSteps > 0) {
-                    displayHeart(true);
+                    drawStepsGraph();
                     String dynamicPart = "---";
                     int last = userSteps.getCurrentSteps();
                     int delta = currentSteps - last;
