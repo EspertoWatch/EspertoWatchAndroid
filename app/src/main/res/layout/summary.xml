@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <android.support.v7.widget.CardView
         android:id="@+id/cardView3"
         android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         app:cardBackgroundColor="@android:color/white"
         app:cardElevation="@dimen/EspertoCardElevation"
-        app:layout_constraintBottom_toBottomOf="@id/guideline2"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/guideline"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/metricsTitle"
@@ -28,55 +28,78 @@
                 android:id="@+id/heartRateTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
                 android:layout_marginTop="8dp"
                 android:fontFamily="@font/lato"
                 android:text="@string/title_heart_rate"
                 android:textColor="@android:color/holo_red_dark"
                 android:textSize="30sp"
-                app:layout_constraintBottom_toTopOf="@+id/heartRateNum"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintVertical_bias="0.1"/>
+                app:layout_constraintTop_toTopOf="parent" />
 
             <TextView
                 android:id="@+id/heartRateNum"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
+                android:layout_marginTop="16dp"
                 android:fontFamily="@font/lato"
                 android:text="--- BPM"
                 android:textColor="@color/EspertoTextGrey"
                 android:textSize="24sp"
-                app:layout_constraintBottom_toTopOf="@+id/heartIcon"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent" />
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/heartRateTitle" />
 
             <ImageView
                 android:id="@+id/heartIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:layout_constraintBottom_toTopOf="@+id/heartRateDelta"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_marginTop="16dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintVertical_bias="0.7"
+                app:layout_constraintTop_toBottomOf="@+id/heartRateNum"
                 app:srcCompat="@drawable/ic_heart_black_24dp" />
 
-            <TextView
-                android:id="@+id/heartRateDelta"
+            <android.support.constraint.ConstraintLayout
+                android:id="@+id/heartRateDeltaLayout"
                 android:layout_width="wrap_content"
-                android:layout_height="20dp"
-                android:fontFamily="@font/lato"
-                android:text="Loading..."
-                android:textColor="@color/EspertoTextGrey"
-                app:layout_constraintTop_toTopOf="parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:layout_marginTop="16dp"
+                android:visibility="invisible"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintVertical_bias="0.9"/>
+                app:layout_constraintTop_toBottomOf="@+id/heartIcon">
+
+                <TextView
+                    android:id="@+id/heartRateDelta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:fontFamily="@font/lato"
+                    android:text="--- BPM"
+                    android:textColor="@color/EspertoTextGrey"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.6" />
+
+                <ImageView
+                    android:id="@+id/heartRateArrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/ic_up_triangle"
+                    android:visibility="visible"
+                    app:layout_constraintBottom_toBottomOf="@+id/heartRateDelta"
+                    app:layout_constraintEnd_toStartOf="@+id/heartRateDelta"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/heartRateDelta" />
+
+            </android.support.constraint.ConstraintLayout>
 
         </android.support.constraint.ConstraintLayout>
 
@@ -85,12 +108,11 @@
     <android.support.v7.widget.CardView
         android:id="@+id/cardView"
         android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
         android:layout_marginStart="8dp"
         app:cardBackgroundColor="@android:color/white"
         app:cardElevation="@dimen/EspertoCardElevation"
-        app:layout_constraintBottom_toBottomOf="@+id/guideline2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="@+id/guideline"
         app:layout_constraintTop_toTopOf="@+id/cardView3">
@@ -103,55 +125,78 @@
                 android:id="@+id/stepCountTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
                 android:layout_marginTop="8dp"
                 android:fontFamily="@font/lato"
                 android:text="@string/title_steps"
                 android:textColor="@color/steps"
                 android:textSize="30sp"
-                app:layout_constraintBottom_toTopOf="@+id/stepCount"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintVertical_bias="0.1"/>
-
-            <ImageView
-                android:id="@+id/stepIcon"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                app:layout_constraintBottom_toTopOf="@+id/stepsDelta"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintVertical_bias="0.7"
-                app:srcCompat="@drawable/ic_steps_black_24dp" />
-
-            <TextView
-                android:id="@+id/stepsDelta"
-                android:layout_width="wrap_content"
-                android:layout_height="20dp"
-                android:fontFamily="@font/lato"
-                android:text="Loading..."
-                android:textColor="@color/EspertoTextGrey"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintVertical_bias="0.9"/>
+                app:layout_constraintTop_toTopOf="parent" />
 
             <TextView
                 android:id="@+id/stepCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
+                android:layout_marginTop="16dp"
                 android:fontFamily="@font/lato"
                 android:text="---- Steps"
                 android:textColor="@color/EspertoTextGrey"
                 android:textSize="24sp"
-                app:layout_constraintBottom_toTopOf="@+id/stepIcon"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent" />
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/stepCountTitle" />
+
+            <ImageView
+                android:id="@+id/stepIcon"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_marginTop="16dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/stepCount"
+                app:srcCompat="@drawable/ic_steps_black_24dp" />
+
+            <android.support.constraint.ConstraintLayout
+                android:id="@+id/stepsDeltaLayout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:layout_marginTop="16dp"
+                android:visibility="invisible"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.508"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/stepIcon">
+
+                <TextView
+                    android:id="@+id/stepsDelta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:fontFamily="@font/lato"
+                    android:text="------ Steps"
+                    android:textColor="@color/EspertoTextGrey"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <ImageView
+                    android:id="@+id/stepsArrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/ic_up_triangle"
+                    android:visibility="visible"
+                    app:layout_constraintBottom_toBottomOf="@+id/stepsDelta"
+                    app:layout_constraintEnd_toStartOf="@+id/stepsDelta"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/stepsDelta" />
+
+            </android.support.constraint.ConstraintLayout>
 
         </android.support.constraint.ConstraintLayout>
 
@@ -171,7 +216,6 @@
         android:id="@+id/metricsTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
         android:fontFamily="@font/lato"
         android:text="@string/title_metrics"
         android:textColor="@color/EspertoTextGrey"
@@ -180,12 +224,5 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
-    <android.support.constraint.Guideline
-        android:id="@+id/guideline2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.85" />
 
 </android.support.constraint.ConstraintLayout>
