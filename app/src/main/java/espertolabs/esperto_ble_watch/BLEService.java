@@ -241,18 +241,23 @@ public class BLEService extends Service {
         mBluetoothGatt.readCharacteristic(characteristic);
     }
 
-    public void writeRXCharacteristic(byte[] value)
+    public boolean writeRXCharacteristic(byte[] value)
     {
-        BluetoothGattService RxService = mBluetoothGatt.getService(RX_SERVICE_UUID);
-        BluetoothGattCharacteristic RxChar = RxService.getCharacteristic(RX_CHAR_UUID);
-        RxChar.setValue(value);
-        boolean status = mBluetoothGatt.writeCharacteristic(RxChar);
+        boolean status;
+        int retries = 3;
+        BluetoothGattService RxService;
+        BluetoothGattCharacteristic RxChar;
 
-        while (status == false) {
+        do {
+            RxService = mBluetoothGatt.getService(RX_SERVICE_UUID);
+            RxChar = RxService.getCharacteristic(RX_CHAR_UUID);
+            RxChar.setValue(value);
             status = mBluetoothGatt.writeCharacteristic(RxChar);
-        }
+            Log.d(TAG, "write TXchar - status=" + status);
+            Log.d(TAG, "write TXchar - retries left " + Integer.toString(retries));
+        } while (!status && (retries-- > 0));
 
-        Log.d(TAG, "write TXchar - status=" + status);
+        return status;
     }
 
     public void enableTXNotification()
@@ -283,7 +288,7 @@ public class BLEService extends Service {
     }
 
     public void scanFromSummary (boolean start) {
-        if (start == true) {
+        if (start) {
             if (mBluetoothLeScanner == null) {
                 mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
             }
@@ -297,9 +302,7 @@ public class BLEService extends Service {
             mBluetoothLeScanner.startScan(mSummaryScanCallback);
         } else {
             mBluetoothLeScanner.stopScan(mSummaryScanCallback);
-
         }
-
     }
 
     //returns device addresses, else returns null

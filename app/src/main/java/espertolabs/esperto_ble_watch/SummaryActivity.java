@@ -14,6 +14,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.icu.util.TimeUnit;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -23,6 +24,7 @@ import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.telephony.SmsMessage;
@@ -31,7 +33,10 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
@@ -57,6 +62,7 @@ import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -66,6 +72,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.TreeMap;
 
 
 public class SummaryActivity extends AppCompatActivity implements Observer {
@@ -91,6 +98,10 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     LineChart heartChart;
     BarChart stepChart;
     ViewFlipper flipper;
+    Spinner hrChartSpinner;
+    Spinner stepsChartSpinner;
+    Integer hrChartDisplayDays = 7;
+    Integer stepsChartDisplayDays = 7;
 
     //Summary values
     TextView hr_current;
@@ -123,14 +134,12 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     detailedStep = false;
                     return true;
                 case R.id.navigation_heart:
-//                    drawHeartRateGraph();
                     flipper.setDisplayedChild(1);
                     detailedHeart = true;
                     summaryDisplay = false;
                     detailedStep = false;
                     return true;
                 case R.id.navigation_steps:
-//                    drawStepsGraph();
                     flipper.setDisplayedChild(2);
                     detailedHeart = false;
                     detailedStep = true;
@@ -153,6 +162,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         bleConnection = findViewById(R.id.bleConnection);
         heartChart = findViewById(R.id.heartChart); //used to display daily HR
         stepChart = findViewById(R.id.stepChart); //used to display daily stepCount
+        hrChartSpinner = findViewById(R.id.heartRateGraphSpinner);
+        stepsChartSpinner = findViewById(R.id.stepGraphSpinner);
         flipper = findViewById(R.id.vf);
         logoImage = findViewById(R.id.logo);
         hr_current = findViewById(R.id.heartRateNum);
@@ -201,7 +212,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         Intent userIntent = getIntent();
         user = (UserAccount) getIntent().getSerializableExtra("user_obj");
 
-        TextView logoutButton = (TextView) findViewById(R.id.text_logout);
+        TextView logoutButton = findViewById(R.id.text_logout);
 
         logoutButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -217,11 +228,34 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             }
         });
 
+        ArrayAdapter<CharSequence> stepsGraphSpinnerAdapter = ArrayAdapter.createFromResource(this,
+                R.array.steps_graph_options_array, android.R.layout.simple_spinner_item);
+        stepsGraphSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        stepsChartSpinner.setAdapter(stepsGraphSpinnerAdapter);
+
+        stepsChartSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                switch (position) {
+                    case 0: stepsChartDisplayDays = 7;
+                            break;
+                    case 1: stepsChartDisplayDays = 31;
+                            break;
+                    case 2: stepsChartDisplayDays = 365;
+                            break;
+                    default: stepsChartDisplayDays = 7;
+                }
+                drawStepsGraph();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // Do nothing
+            }
+        });
+
         userHR.setUserId(user.getUsername());
         userSteps.setUserId(user.getUsername());
-
-//        drawHeartRateGraph();
-//        drawStepsGraph();
 
         //retrieve data
         getHRDB();
@@ -255,129 +289,160 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
     private void drawHeartRateGraph() {
         if (userHR.getAvgHourlyHR().size() != 0){
-            List<Entry> entries = retrieveHeartRateData();
-            LineDataSet dataSet = new LineDataSet(entries, "Heart Rate"); // add entries to dataset
+            List<Entry> hr_graph_entries = retrieveHeartRateData(6);
+            LineDataSet hr_dataSet = new LineDataSet(hr_graph_entries, "Heart Rate");
 
-            dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+            hr_dataSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
 
-            dataSet.setColors(getResources().getColor(R.color.colorPrimary));
-            dataSet.setValueTextColor(getResources().getColor(R.color.colorPrimary)); // styling
-            LineData lineData = new LineData(dataSet);
+            hr_dataSet.setColors(getResources().getColor(android.R.color.holo_red_dark));
+            hr_dataSet.setLineWidth(3f);
+            hr_dataSet.setDrawCircleHole(true);
+            hr_dataSet.setDrawCircles(true);
+            hr_dataSet.setCircleColor(getResources().getColor(android.R.color.holo_red_dark));
+            hr_dataSet.setCircleHoleRadius(2f);
+            hr_dataSet.setCircleRadius(5f);
+            hr_dataSet.setDrawValues(false);
+
+            LineData lineData = new LineData(hr_dataSet);
             YAxis leftAxis = heartChart.getAxisLeft();
+            XAxis bottomAxis = heartChart.getXAxis();
+            YAxis rightAxis = heartChart.getAxisRight();
+
             leftAxis.setDrawAxisLine(false);
-            leftAxis.setDrawGridLines(false);
+            leftAxis.setDrawGridLines(true);
             leftAxis.setDrawZeroLine(false);
-            heartChart.getXAxis().setDrawGridLines(false);
-            heartChart.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
-            heartChart.getAxisRight().setEnabled(false);
-            YAxis rightAxis = heartChart.getAxisLeft();
-            leftAxis.setDrawAxisLine(false);
-            leftAxis.setDrawGridLines(false);
+            leftAxis.setAxisMinimum(0.01f);
+            leftAxis.setGranularity(1f);
+            leftAxis.setTypeface(ResourcesCompat.getFont(this, R.font.lato));
+            leftAxis.setTextColor(R.color.EspertoTextGrey);
+
+            bottomAxis.setDrawGridLines(false);
+            bottomAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+            bottomAxis.setTypeface(ResourcesCompat.getFont(this, R.font.lato));
+            bottomAxis.setTextColor(R.color.EspertoTextGrey);
+            bottomAxis.setAxisMinimum(0f);
+            bottomAxis.setGranularity(1f);
+
+            rightAxis.setEnabled(false);
+
             heartChart.getDescription().setEnabled(false);
             heartChart.getLegend().setEnabled(false);
 
             heartChart.setData(lineData);
-            heartChart.invalidate(); // refresh
+            heartChart.invalidate(); // Refresh
         }
-    }
-
-    private void updateHeartRateGraph() {
-        if (userHR.getAvgHourlyHR().size() != 0){
-            List<Entry> entries = retrieveHeartRateData();
-            LineDataSet dataSet = new LineDataSet(entries, "Heart Rate"); // add entries to dataset
-
-            dataSet.setDrawFilled(true);
-            dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-
-            dataSet.setColors(getResources().getColor(R.color.colorPrimary));
-            dataSet.setValueTextColor(getResources().getColor(R.color.colorPrimary)); // styling
-            LineData lineData = new LineData(dataSet);
-
-            heartChart.setData(lineData);
-            heartChart.invalidate(); // refresh
-        }
-    }
-
-    //Retrieve data from AWS services
-    //If no data - state "no data available"
-    private List<Entry> retrieveHeartRateData(){
-       //Retrieve data here
-        List<Entry> entries = new ArrayList<Entry>();
-        HashMap<String, Float> avgHourlyHR = userHR.getAvgHourlyHR();
-        int timeCounter = 8; //start at 8am TODO:: add actual times once I have the esperto watch (24 h clock)
-        for(Map.Entry<String, Float> entry : avgHourlyHR.entrySet()){
-            // turn your data into Entry objects
-            entries.add(new Entry(timeCounter, entry.getValue())); //wrap each data point into Entry objects
-            timeCounter++;
-        }
-        return entries;
     }
 
     //TODO:: adjust color of graph if goal achieved
     private void drawStepsGraph() {
         if (userSteps.getTotalDailySteps().size() != 0) {
-            BarDataSet dataSet = retrieveStepData();
-            ArrayList<IBarDataSet> dataSets = new ArrayList<IBarDataSet>();
-            dataSet.setColors(getResources().getColor(R.color.navbar));
-            dataSet.setValueTextColor(getResources().getColor(R.color.colorPrimary)); // styling
-            BarData barData = new BarData(dataSet);
+            List<BarEntry> steps_graph_entries = retrieveStepData(stepsChartDisplayDays);
+            BarDataSet steps_dataSet = new BarDataSet(steps_graph_entries, "Step Count");
+
+            steps_dataSet.setColors(getResources().getColor(R.color.steps));
+            steps_dataSet.setDrawValues(false);
+
+            BarData barData = new BarData(steps_dataSet);
             YAxis leftAxis = stepChart.getAxisLeft();
+            XAxis bottomAxis = stepChart.getXAxis();
+            YAxis rightAxis = stepChart.getAxisRight();
+
             leftAxis.setDrawAxisLine(false);
-            leftAxis.setDrawGridLines(false);
+            leftAxis.setDrawGridLines(true);
             leftAxis.setDrawZeroLine(false);
-            stepChart.getXAxis().setDrawGridLines(false);
-            stepChart.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
-            stepChart.getAxisRight().setEnabled(false);
-            YAxis rightAxis = stepChart.getAxisLeft();
-            leftAxis.setDrawAxisLine(false);
-            leftAxis.setDrawGridLines(false);
-            dataSet.setDrawValues(false);
+            leftAxis.setAxisMinimum(0.01f);
+//            leftAxis.setGranularity(1f);
+            leftAxis.setTypeface(ResourcesCompat.getFont(this, R.font.lato));
+            leftAxis.setTextColor(R.color.EspertoTextGrey);
+
+            bottomAxis.setDrawGridLines(false);
+            bottomAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+            bottomAxis.setTypeface(ResourcesCompat.getFont(this, R.font.lato));
+            bottomAxis.setTextColor(R.color.EspertoTextGrey);
+            bottomAxis.setLabelCount(7);
+            bottomAxis.setValueFormatter(new DayAxisValueFormatter(stepChart));
+            bottomAxis.setGranularity(1f);
+            bottomAxis.setLabelRotationAngle(45f);
+
+            rightAxis.setEnabled(false);
 
             stepChart.getDescription().setEnabled(false);
             stepChart.getLegend().setEnabled(false);
-            dataSets.add(dataSet);
+            stepChart.setFitBars(true);
+            stepChart.setExtraOffsets(0,0,0,8f);
+
+            if (stepsChartDisplayDays > 7) {
+                stepChart.setScaleXEnabled(true);
+            } else {
+                stepChart.setScaleXEnabled(false);
+            }
+
             stepChart.setData(barData);
-            stepChart.invalidate(); // refresh
+            stepChart.invalidate(); // Refresh
         }
     }
 
-    private void updateStepsGraph() {
-        if (userSteps.getTotalDailySteps().size() != 0) {
-            BarDataSet dataSet = retrieveStepData();
+    private List<Entry> retrieveHeartRateData(int displayDays) {
+        // Retrieve data here
+        List<Entry> entries = new ArrayList<>();
+        HashMap<String, Float> avgHourlyHR = userHR.getAvgHourlyHR();
+        Map<String, Float> sortedAvgHourlyHR = new TreeMap<>(avgHourlyHR);
 
-            dataSet.setColors(getResources().getColor(R.color.navbar));
-            dataSet.setValueTextColor(getResources().getColor(R.color.colorPrimary)); // styling
-
-            BarData barData = new BarData(dataSet);
-
-            stepChart.setData(barData);
-            stepChart.invalidate(); // refresh
-        }
-    }
-
-    //call database to retrieve heart data
-    private BarDataSet retrieveStepData(){
-        //retrieve step data and format output
-        ArrayList xVals = new ArrayList();
-        ArrayList<BarEntry> yVals = new ArrayList<BarEntry>();
         float counter = 0;
-        float timeCounter = 8; //start at 8am TODO:: add actual times once I have the esperto watch (24 h clock)
-        HashMap<String, Integer> totalDailySteps = userSteps.getTotalDailySteps();
-        for(Map.Entry<String, Integer> entry : totalDailySteps.entrySet()){
-            // turn your data into Entry objects
-            int hours = (int)timeCounter;
-            int min = (int)(timeCounter - hours) *60;
-            String time = String.format("%d:%02d",hours, min).toString();
 
-            yVals.add(new BarEntry(counter, entry.getValue())); //wrap each data point into Entry objects
-            xVals.add(time);
-            timeCounter = timeCounter + (float)0.5;
+        for (Map.Entry<String, Float> entry : sortedAvgHourlyHR.entrySet()) {
+            // Turn your data into Entry objects
+            entries.add(new Entry(counter, entry.getValue()));
             counter++;
         }
 
-        BarDataSet dataSet = new BarDataSet(yVals, "Step Count");
-        return dataSet;
-     //   BarData data = new BarData(xVals.toString(), dataSet);
+        return entries;
+    }
+
+    private List<BarEntry> retrieveStepData(int displayDays) {
+        // Retrieve data here
+        List<BarEntry> entries = new ArrayList<>();
+        HashMap<String, Integer> totalDailySteps = userSteps.getTotalDailySteps();
+//        Map<String, Integer> sortedTotalDailySteps = new TreeMap<>(totalDailySteps);
+
+        Long now = new Date().getTime();
+        Long deltaTime;
+        Date targetTime;
+        SimpleDateFormat ftKey = new SimpleDateFormat ("YYYY-MM-dd", Locale.US);
+        SimpleDateFormat ftYear = new SimpleDateFormat ("YYYY", Locale.US);
+        SimpleDateFormat ftDayofYear = new SimpleDateFormat ("D", Locale.US);
+        String targetTimeString;
+        Integer targetDayofYear;
+        Integer targetYear;
+        Integer targetSteps;
+
+        for (int i = 0; i < displayDays; i++) {
+            deltaTime = (1000 * 60 * 60 * 24) * (long)i;
+            targetTime = new Date(now - deltaTime);
+            targetTimeString = ftKey.format(targetTime);
+            targetDayofYear = Integer.parseInt(ftDayofYear.format(targetTime)) + 1;
+            targetYear = Integer.parseInt(ftYear.format(targetTime));
+            targetDayofYear += (int) ((targetYear - 2016) * 365.25f);
+            targetSteps = totalDailySteps.get(targetTimeString);
+
+            if (targetSteps != null) {
+                entries.add(new BarEntry(targetDayofYear, targetSteps));
+            } else {
+                entries.add(new BarEntry(targetDayofYear, 0));
+            }
+        }
+
+//        for (Map.Entry<String, Integer> entry : sortedTotalDailySteps.entrySet()) {
+//            // Turn your data into Entry objects
+//            entries.add(new BarEntry(counter, entry.getValue()));
+//            if (counter == displayDays) {
+//                return entries;
+//            } else {
+//                counter += 1;
+//            }
+//        }
+
+        return entries;
     }
 
     //check if user is new - TODO
@@ -415,8 +480,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             mBLEService = binder.getService();
             mServiceBound = true;
             if (mBLEService.initialize()) {
-                mBLEService.scanFromSummary(true);
-                mBLEService.connect(user.getDeviceAddress());
+                scanAndConnect();
             }
         }
 
@@ -427,18 +491,58 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     };
 
     void syncWatch() {
-        // Send updated time and date every time summary is opened
-        Date now = new Date();
+        if (mConnected) {
+            // Send updated time and date every time summary is opened
+            Date now = new Date();
 
-        SimpleDateFormat ft = new SimpleDateFormat ("HH:mm:ss", Locale.US);
-        String timeString = ft.format(now);
-        byte[] send = timeString.getBytes(StandardCharsets.UTF_8);
-        mBLEService.writeRXCharacteristic(send);
+            SimpleDateFormat ft = new SimpleDateFormat ("HH:mm:ss", Locale.US);
+            String timeString = ft.format(now);
+            byte[] sendTime = timeString.getBytes(StandardCharsets.UTF_8);
 
-        ft = new SimpleDateFormat ("dd/MM/YYYY", Locale.US);
-        timeString = ft.format(now);
-        send = timeString.getBytes(StandardCharsets.UTF_8);
-        mBLEService.writeRXCharacteristic(send);
+            ft = new SimpleDateFormat ("dd/MM/YYYY", Locale.US);
+            timeString = ft.format(now);
+            byte[] sendDate = timeString.getBytes(StandardCharsets.UTF_8);
+
+            Runnable retrySendTimeDate = () -> {
+                int retries = 10;
+                boolean statusTime;
+                boolean statusDate;
+                do {
+                    statusTime = mBLEService.writeRXCharacteristic(sendTime);
+                    statusDate = mBLEService.writeRXCharacteristic(sendDate);
+                    try {
+                        Thread.sleep(50);
+                    } catch(InterruptedException e) {
+                    }
+                } while (((!statusTime) || (!statusDate)) && (retries-- > 0));
+            };
+
+            Runnable retrySendDate = () -> {
+                int retries = 10;
+                while (!mBLEService.writeRXCharacteristic(sendDate) && (retries-- > 0)) {
+                    try {
+                        Thread.sleep(50);
+                    } catch(InterruptedException e) {
+                    }
+                }
+            };
+
+            if (!mBLEService.writeRXCharacteristic(sendTime)) {
+                new Thread(retrySendTimeDate).start();
+            } else {
+                if (!mBLEService.writeRXCharacteristic(sendDate)) {
+                    new Thread(retrySendDate).start();
+                }
+            }
+
+        } else {
+            scanAndConnect();
+        }
+    }
+
+    void scanAndConnect() {
+        mBLEService.scanFromSummary(true);
+        mBLEService.connect(user.getDeviceAddress());
     }
 
     // ACTION_GATT_CONNECTED: connected to a GATT server.
@@ -450,37 +554,38 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
-            boolean connectedOnce = false;
+//            boolean connectedOnce = false;
             if (BLEService.ACTION_GATT_CONNECTED.equals(action)) {
                 Log.i("Update", "Device connected");
                 mConnected = true;
-                connectedOnce = true;
+//                connectedOnce = true;
                 invalidateOptionsMenu();
-                bleConnection.setText("Watch connected");
-                bleConnection.setTextColor(Color.GREEN);
+                bleConnection.setVisibility(View.INVISIBLE);
+//                bleConnection.setText("Watch connected");
+//                bleConnection.setTextColor(Color.GREEN);
             } else if (BLEService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 Log.i("Update", "Device disconnected");
                 mConnected = false;
                 Toast.makeText(getApplicationContext(), getString(R.string.watch_disconnected), Toast.LENGTH_SHORT).show();
                 invalidateOptionsMenu();
 
-                if (connectedOnce == true) {
-                    Date now = new Date();
-                    SimpleDateFormat ft = new SimpleDateFormat ("hh:mm:ss a dd/MM/YYYY");
-                    String lastConnectedTime = ft.format(now);
-
-                    bleConnection.setText("Watch disconnected\nLast seen at " + lastConnectedTime);
+//                if (connectedOnce == true) {
+//                    Date now = new Date();
+//                    SimpleDateFormat ft = new SimpleDateFormat ("hh:mm:ss a dd/MM/YYYY");
+//                    String lastConnectedTime = ft.format(now);
+//
+//                    bleConnection.setText("Watch disconnected\nLast seen at " + lastConnectedTime);
+                    bleConnection.setVisibility(View.VISIBLE);
                     bleConnection.setTextColor(Color.RED);
-                }
+//                }
 
                 final Handler connectHandler = new Handler();
                 connectHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        mBLEService.scanFromSummary(true);
-                        mBLEService.connect(user.getDeviceAddress());
+                        scanAndConnect();
                     }
-                }, 5000);
+                }, 500);
                 //clearUI();
             } else if (BLEService.
                     ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {

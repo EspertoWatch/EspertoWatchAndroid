@@ -61,15 +61,12 @@
         <item>Last Hour</item>
         <item>Last 31 Days</item>
         <item>Last Year</item>
-        <item>All</item>
     </string-array>
 
     <string-array name="steps_graph_options_array">
         <item>Last 7 Days</item>
-        <item>Last Hour</item>
         <item>Last 31 Days</item>
         <item>Last Year</item>
-        <item>All</item>
     </string-array>
 
     <!-- Strings related to Cognito -->
