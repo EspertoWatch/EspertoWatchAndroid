@@ -100,7 +100,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     ViewFlipper flipper;
     Spinner hrChartSpinner;
     Spinner stepsChartSpinner;
-    Integer hrChartDisplayDays = 7;
+    Integer hrChartDisplayDays = 0;
     Integer stepsChartDisplayDays = 7;
 
     //Summary values
@@ -245,7 +245,39 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                             break;
                     default: stepsChartDisplayDays = 7;
                 }
+
                 drawStepsGraph();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // Do nothing
+            }
+        });
+
+        ArrayAdapter<CharSequence> hrGraphSpinnerAdapter = ArrayAdapter.createFromResource(this,
+                R.array.hr_graph_options_array, android.R.layout.simple_spinner_item);
+        hrGraphSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        hrChartSpinner.setAdapter(hrGraphSpinnerAdapter);
+
+        hrChartSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                switch (position) {
+                    case 0: hrChartDisplayDays = 0;
+                            break;
+                    case 1: hrChartDisplayDays = -1;
+                            break;
+                    case 2: hrChartDisplayDays = 7;
+                            break;
+                    case 3: hrChartDisplayDays = 31;
+                            break;
+                    case 4: hrChartDisplayDays = 365;
+                            break;
+                    default: hrChartDisplayDays = 0;
+                }
+
+                drawHeartRateGraph();
             }
 
             @Override
@@ -289,7 +321,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
     private void drawHeartRateGraph() {
         if (userHR.getAvgHourlyHR().size() != 0){
-            List<Entry> hr_graph_entries = retrieveHeartRateData(6);
+            List<Entry> hr_graph_entries = retrieveHeartRateData(hrChartDisplayDays);
             LineDataSet hr_dataSet = new LineDataSet(hr_graph_entries, "Heart Rate");
 
             hr_dataSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
@@ -320,8 +352,14 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             bottomAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
             bottomAxis.setTypeface(ResourcesCompat.getFont(this, R.font.lato));
             bottomAxis.setTextColor(R.color.EspertoTextGrey);
+//            if (hrChartDisplayDays > 0) {
+//                bottomAxis.setValueFormatter(new DayAxisValueFormatter(heartChart));
+//            }
+            bottomAxis.setLabelCount(7);
             bottomAxis.setAxisMinimum(0f);
             bottomAxis.setGranularity(1f);
+
+
 
             rightAxis.setEnabled(false);
 
@@ -386,15 +424,59 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         // Retrieve data here
         List<Entry> entries = new ArrayList<>();
         HashMap<String, Float> avgHourlyHR = userHR.getAvgHourlyHR();
-        Map<String, Float> sortedAvgHourlyHR = new TreeMap<>(avgHourlyHR);
+//        Map<String, Float> sortedAvgHourlyHR = new TreeMap<>(avgHourlyHR);
 
-        float counter = 0;
+//        float counter = 0;
 
-        for (Map.Entry<String, Float> entry : sortedAvgHourlyHR.entrySet()) {
-            // Turn your data into Entry objects
-            entries.add(new Entry(counter, entry.getValue()));
-            counter++;
+        Long now = new Date().getTime();
+        Long deltaTime;
+        Date targetTime;
+        SimpleDateFormat ftKey = new SimpleDateFormat ("YYYY-MM-dd kk", Locale.US);
+        SimpleDateFormat ftYear = new SimpleDateFormat ("YYYY", Locale.US);
+        SimpleDateFormat ftDayofYear = new SimpleDateFormat ("D", Locale.US);
+        String targetTimeString;
+        Integer targetDayofYear;
+        Integer targetYear;
+        Float targetHR;
+
+        if (displayDays > 0) {
+            for (int i = 0; i < displayDays; i++) {
+                deltaTime = (1000 * 60 * 60 * 24) * (long)i;
+                targetTime = new Date(now - deltaTime);
+                targetTimeString = ftKey.format(targetTime);
+                targetDayofYear = Integer.parseInt(ftDayofYear.format(targetTime)) + 1;
+                targetYear = Integer.parseInt(ftYear.format(targetTime));
+                targetDayofYear += (int) ((targetYear - 2016) * 365.25f);
+                targetHR = avgHourlyHR.get(targetTimeString);
+
+//                if (targetHR != null) {
+//                    entries.add(new Entry(targetDayofYear, targetHR));
+//                } else {
+                    entries.add(new Entry(targetDayofYear, -1));
+//                }
+            }
+        } else {
+            for (int i = 0; i < 24; i++) {
+                deltaTime = (1000 * 60 * 60) * (long)i;
+                targetTime = new Date(now - deltaTime);
+                targetTimeString = ftKey.format(targetTime);
+                targetHR = avgHourlyHR.get(targetTimeString);
+
+                if (targetHR != null) {
+                    entries.add(new Entry(i, targetHR));
+                } else {
+                    entries.add(new Entry(i, -1));
+                }
+            }
         }
+
+
+
+//        for (Map.Entry<String, Float> entry : sortedAvgHourlyHR.entrySet()) {
+//            // Turn your data into Entry objects
+//            entries.add(new Entry(counter, entry.getValue()));
+//            counter++;
+//        }
 
         return entries;
     }

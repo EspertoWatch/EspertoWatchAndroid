@@ -57,8 +57,9 @@
     <string name="esperto_device_name">Esperto</string>
 
     <string-array name="hr_graph_options_array">
-        <item>Last 7 Days</item>
+        <item>Last 24 hours</item>
         <item>Last Hour</item>
+        <item>Last 7 Days</item>
         <item>Last 31 Days</item>
         <item>Last Year</item>
     </string-array>
