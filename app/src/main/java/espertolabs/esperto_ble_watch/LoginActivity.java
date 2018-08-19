@@ -47,7 +47,6 @@ public class LoginActivity extends AppCompatActivity {
     private ApiGatewayHandler handler;
     Boolean hasAttemptedLogin = false;
     private ConnectivityManager cm;
-    int PERMISSION_ALL = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,40 +65,6 @@ public class LoginActivity extends AppCompatActivity {
                 getString(R.string.cognito_client_id), 
                 getString(R.string.cognito_client_secret),
                 Regions.fromName(getString(R.string.cognito_region)));
-
-        //check if Bluetooth is enabled
-        BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (mBluetoothAdapter != null) {
-            if (!mBluetoothAdapter.isEnabled()) {
-                mBluetoothAdapter.enable();
-            }
-        } else {
-            Toast.makeText(this, getString(R.string.ble_not_supported), Toast.LENGTH_SHORT).show();
-        }
-
-        String[] PERMISSIONS = {Manifest.permission.READ_PHONE_STATE,
-                                Manifest.permission.READ_CALL_LOG,
-                                Manifest.permission.PROCESS_OUTGOING_CALLS,
-                                Manifest.permission.RECEIVE_SMS,
-                                Manifest.permission.READ_SMS,
-                                Manifest.permission.READ_EXTERNAL_STORAGE,
-                                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                                Manifest.permission.ACCESS_NETWORK_STATE};
-
-        if(!hasPermissions(this, PERMISSIONS)){
-            ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
-        }
-    }
-
-    public static boolean hasPermissions(Context context, String... permissions) {
-        if (context != null && permissions != null) {
-            for (String permission : permissions) {
-                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 
     @Override

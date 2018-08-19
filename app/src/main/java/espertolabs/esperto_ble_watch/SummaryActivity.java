@@ -86,7 +86,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     private boolean mServiceBound;
     private boolean mConnected = false;
     private String dataCharacteristicUUID = "00002a05-0000-1000-8000-00805f9b34fb";
-    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 987;
     private BluetoothGattCharacteristic dataCharacteristic;
     private boolean summaryDisplay = false;
     private boolean detailedHeart = false;
@@ -179,16 +178,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         BottomNavigationView navigation = findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
         navigation.setItemBackgroundResource(R.drawable.navigationbackground);
-
-        //Check whether BLE is supported
-        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            Toast.makeText(this, getString(R.string.ble_not_supported), Toast.LENGTH_SHORT).show();
-            finish();
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
-        }
 
         //check if Bluetooth is enabled
         Intent intent = new Intent(this, BLEService.class);
@@ -295,20 +284,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         greetUser();
         //TODO: for now we are just setting step/hr to 0 if no data
         //TODO: need to replace with some user friendly msg
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSION_REQUEST_COARSE_LOCATION: {
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                } else {
-                    Toast.makeText(this, getString(R.string.location_requirec), Toast.LENGTH_SHORT).show();
-                    finish();
-                }
-            }
-        }
     }
 
     public void greetUser(){
@@ -447,13 +422,14 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 targetDayofYear = Integer.parseInt(ftDayofYear.format(targetTime)) + 1;
                 targetYear = Integer.parseInt(ftYear.format(targetTime));
                 targetDayofYear += (int) ((targetYear - 2016) * 365.25f);
+
                 targetHR = avgHourlyHR.get(targetTimeString);
 
-//                if (targetHR != null) {
-//                    entries.add(new Entry(targetDayofYear, targetHR));
-//                } else {
+                if (targetHR != null) {
+                    entries.add(new Entry(targetDayofYear, targetHR));
+                } else {
                     entries.add(new Entry(targetDayofYear, -1));
-//                }
+                }
             }
         } else {
             for (int i = 0; i < 24; i++) {
@@ -686,14 +662,19 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 if (rcv.length % 4 == 0) {
                     Log.i("BLE data rcv'd", Arrays.toString(rcv));
                     for (int i = 0; i < rcv.length; i += 4) {
-                        if (rcv[i+3] == 0) {
+                        if ((rcv[i+3] & 0x80) == 0) {
                             int heartRate = rcv[i];
                             int stepCount = ( ( rcv[i+1] & 0xFFFF ) << 8 ) | ( rcv[i+2] );
+                            int spo2 = rcv[i+3];
 
                             Log.i("Heart rate", Integer.toString(heartRate));
                             Log.i("Step count", Integer.toString(stepCount));
-
-                            onBLEReceive(heartRate, stepCount);
+                            Log.i("SpO2", Integer.toString(spo2));
+                            if (heartRate >= 40 && heartRate <= 200 && stepCount > 0 && spo2 >= 0 && spo2 <= 100) {
+                                onBLEReceive(heartRate, stepCount);
+                            } else {
+                                Log.e("BLE data", "out of range");
+                            }
                         } else {
                             Log.e("BLE data bad check byte", Integer.toString((int) rcv[i+3]));
                         }
@@ -793,7 +774,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         unregisterReceiver(mSMSReceiver);
         unbindService(mConnection);
         hr_db.close();
-        // steps_db.close();
+        steps_db.close();
     }
 
     @Override
