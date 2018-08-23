@@ -20,6 +20,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Telephony;
 import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -96,7 +97,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     TextView steps_current;
     TextView hr_delta;
     TextView steps_delta;
+    ImageView hr_arrow;
+    ImageView steps_arrow;
     ImageView logoImage;
+    ConstraintLayout hr_delta_layout;
+    ConstraintLayout steps_delta_layout;
 
     //instantiate api gateway handler
     final ApiGatewayHandler handler = new ApiGatewayHandler();
@@ -155,7 +160,10 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         steps_current = findViewById(R.id.stepCount);
         hr_delta = findViewById(R.id.heartRateDelta);
         steps_delta = findViewById(R.id.stepsDelta);
-        steps_delta = findViewById(R.id.stepsDelta);
+        hr_arrow = findViewById(R.id.heartRateArrow);
+        steps_arrow = findViewById(R.id.stepsArrow);
+        hr_delta_layout = findViewById(R.id.heartRateDeltaLayout);
+        steps_delta_layout = findViewById(R.id.stepsDeltaLayout);
 
         mTextMessage = findViewById(R.id.message);
         BottomNavigationView navigation = findViewById(R.id.navigation);
@@ -466,27 +474,6 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     return;
                 }
 
-//                Log.i("Update", "onReceive: " + gattServices.toString());
-
-//                for (BluetoothGattService gattService : gattServices) {
-//
-//                    List<BluetoothGattCharacteristic> gattCharacteristics =
-//                            gattService.getCharacteristics();
-//                    // Loops through available Characteristics.
-//                    for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
-//                        String uuid = gattCharacteristic.getUuid().toString();
-//                        //if(uuid.equals(dataCharacteristicUUID)){
-//                        dataCharacteristic = gattCharacteristic;
-//                        mBLEService.readCharacteristic(gattCharacteristic);
-//                        //}
-//                        Log.d("DEBUG", "PRINT UUIDS: " + uuid);
-//                    }
-//                }
-
-                // Show all the supported services and characteristics on the
-                // user interface.
-                //displayGattServices(mBluetoothLeService.getSupportedGattServices());
-
                 syncWatch();
             } else if (BLEService.ACTION_DATA_AVAILABLE.equals(action)) {
                 byte[] rcv = intent.getByteArrayExtra(BLEService.EXTRA_DATA);
@@ -716,18 +703,19 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             public void run() {
                 if (currentHr > 0) {
                     displayHeart(true);
-                    String dynamicPart;
+                    String dynamicPart = "---";
                     int last = userHR.getCurrentHR();
                     int delta = currentHr - last;
                     userHR.setCurrentHR(currentHr);
                     if (delta == 0) {
-                        dynamicPart = "No change";
+                        hr_delta_layout.setVisibility(View.INVISIBLE);
                     } else {
                         dynamicPart = Integer.toString(Math.abs(delta));
-                        dynamicPart += delta > 0 ?  " Up" : " Down";
+                        hr_arrow.setBackgroundResource(delta > 0 ?  R.drawable.ic_up_triangle : R.drawable.ic_down_triangle);
+                        hr_delta_layout.setVisibility(View.VISIBLE);
                     }
-                    hr_delta.setText(dynamicPart + " from last");
-                    hr_current.setText(currentHr != 0 ? Integer.toString(userHR.getCurrentHR()) + " BPM" : "No Data");
+                    hr_delta.setText(dynamicPart + " BPM");
+                    hr_current.setText(Integer.toString(userHR.getCurrentHR()) + " BPM");
                 }
             }
         });
@@ -738,19 +726,20 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             @Override
             public void run() {
                 if (currentSteps > 0) {
-                    displaySteps(true);
-                    String dynamicPart;
+                    displayHeart(true);
+                    String dynamicPart = "---";
                     int last = userSteps.getCurrentSteps();
                     int delta = currentSteps - last;
                     userSteps.setCurrentSteps(currentSteps);
                     if (delta == 0) {
-                        dynamicPart = "No change";
+                        steps_delta_layout.setVisibility(View.INVISIBLE);
                     } else {
                         dynamicPart = Integer.toString(Math.abs(delta));
-                        dynamicPart += delta > 0 ?  " Up" : " Down";
+                        steps_arrow.setBackgroundResource(delta > 0 ?  R.drawable.ic_up_triangle : R.drawable.ic_down_triangle);
+                        steps_delta_layout.setVisibility(View.VISIBLE);
                     }
-                    steps_delta.setText(dynamicPart + " from last");
-                    steps_current.setText(currentSteps != 0 ? Integer.toString(userSteps.getCurrentSteps()) + " steps" : "No Data");
+                    steps_delta.setText(dynamicPart + " Steps");
+                    steps_current.setText(Integer.toString(userSteps.getCurrentSteps()) + " Steps");
                 }
             }
         });
