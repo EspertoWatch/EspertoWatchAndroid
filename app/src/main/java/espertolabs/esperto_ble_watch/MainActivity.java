@@ -58,8 +58,8 @@ public class MainActivity extends AppCompatActivity {
         if (mBluetoothAdapter != null) {
             if (!mBluetoothAdapter.isEnabled()) {
                 mBluetoothAdapter.enable();
-                BLEEnabled = true;
             }
+            BLEEnabled = true;
         } else {
             Toast.makeText(this, getString(R.string.ble_not_supported), Toast.LENGTH_LONG).show();
             finish();
@@ -85,10 +85,10 @@ public class MainActivity extends AppCompatActivity {
                 Regions.fromName(getString(R.string.cognito_region)));
 
         CognitoUser currentUser = userPool.getCurrentUser();
-        if(currentUser != null){
-            currentUser.getSessionInBackground(authenticationHandler);
-        } else {
-            if (BLEEnabled) {
+        if (BLEEnabled) {
+            if(currentUser != null){
+                currentUser.getSessionInBackground(authenticationHandler);
+            } else {
                 goToLogin();
             }
         }
