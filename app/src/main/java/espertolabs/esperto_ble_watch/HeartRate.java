@@ -15,17 +15,17 @@ public class HeartRate extends Observable{
     private int uId;
     private String userId;
     private int currentHR;
-    // Key: "YYYY-MM-dd kk", where kk is the current hour of the day from 01 to 24
-    // Value: The average heart rate for that hour
-    private HashMap<String, Float> avgHourlyHR;
-
-    // For internal app use only, used to calculate the avg, not uploaded to server
-    private HashMap<String, Integer> avgHourlyHRCount;
+    // Key: The Unix time in seconds as a string (stored as a string on DynamoDB)
+    // Value: The integer heart rate for that time
+    private HashMap<String, Integer> HRMap;
+    // Buffer to keep HR values before sending and clearing
+    private HashMap<String, Integer> HRMapBuffer;
 
     HeartRate() {
+        this.userId = "";
         this.currentHR = 0;
-        this.avgHourlyHR = new HashMap<>();
-        this.avgHourlyHRCount = new HashMap<>();
+        this.HRMap = new HashMap<>();
+        this.HRMapBuffer = new HashMap<>();
     }
 
     public int getUId() {
@@ -54,62 +54,33 @@ public class HeartRate extends Observable{
         notifyObservers();
     }
 
-    public HashMap<String, Integer> getAvgHourlyHRCount() {
-        return avgHourlyHRCount;
+    public HashMap<String, Integer> getHRMap() {
+        return HRMap;
     }
 
-    public void setAvgHourlyHRCount(HashMap<String, Integer> avgHourlyHRCount) {
-        this.avgHourlyHRCount = avgHourlyHRCount;
-        setChanged();
-        notifyObservers();
-    }
-
-    private void incrAvgHourlyHRCount(String formattedDateAndTime) {
-        if (this.avgHourlyHRCount != null) {
-            Integer heartRateCount = this.avgHourlyHRCount.get(formattedDateAndTime);
-            Integer newHeartRateCount;
-
-            if (heartRateCount != null) {
-                // Avg count has already been recorded for this hour, increment
-                newHeartRateCount = heartRateCount + 1;
-            } else {
-                // Avg count has not been recorded yet for this hour, this will be the initial value
-                newHeartRateCount = 1;
-            }
-
-            this.avgHourlyHRCount.put(formattedDateAndTime, newHeartRateCount);
+    public void setHRMap(HashMap<String, Integer> HRMap) {
+        if (HRMap != null) {
+            this.HRMap = HRMap;
             setChanged();
             notifyObservers();
         }
     }
 
-    public HashMap<String, Float> getAvgHourlyHR() {
-        return avgHourlyHR;
-    }
-
-    public void setAvgHourlyHR(HashMap<String, Float> avgHourlyHR) {
-        this.avgHourlyHR = avgHourlyHR;
+    public void addHRMap(String unixTimeSeconds, Integer heartRate) {
+        this.HRMap.put(unixTimeSeconds, heartRate);
+        this.HRMapBuffer.put(unixTimeSeconds, heartRate);
+        this.currentHR = heartRate;
         setChanged();
         notifyObservers();
     }
 
-    public void addAvgHourlyHR(String formattedDateAndTime, Integer heartRate) {
-        if (this.avgHourlyHR != null) {
-            incrAvgHourlyHRCount(formattedDateAndTime);
-            Float heartRateAvg = this.avgHourlyHR.get(formattedDateAndTime);
-            Integer heartRateCount = this.avgHourlyHRCount.get(formattedDateAndTime);
-            Float newHeartRateAvg;
+    public HashMap<String, Integer> getHRMapBuffer() {
+        return HRMapBuffer;
+    }
 
-            if (heartRateAvg != null) {
-                // Avg has already been recorded for this hour, append to this avg
-                float avgWeight = 1/(float) heartRateCount;
-                newHeartRateAvg = (heartRateAvg * (1-avgWeight)) + (heartRate * (avgWeight));
-            } else {
-                // Avg has not been recorded yet for this hour, this will be the initial value
-                newHeartRateAvg = (float) heartRate;
-            }
-
-            this.avgHourlyHR.put(formattedDateAndTime, newHeartRateAvg);
+    public void setHRMapBuffer(HashMap<String, Integer> HRMapBuffer) {
+        if (HRMapBuffer != null) {
+            this.HRMapBuffer = HRMapBuffer;
             setChanged();
             notifyObservers();
         }

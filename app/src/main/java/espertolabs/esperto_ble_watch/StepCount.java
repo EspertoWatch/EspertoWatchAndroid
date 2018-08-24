@@ -3,6 +3,7 @@ package espertolabs.esperto_ble_watch;
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.PrimaryKey;
 
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Observable;
 import java.util.List;
@@ -16,13 +17,18 @@ public class StepCount extends Observable{
 
     private String userId;
     private int currentSteps;
-    // Key: "YYYY-MM-dd"
-    // Value: The total steps for that day
-    private HashMap<String, Integer> totalDailySteps;
+    private int lastSetUnixTimeSeconds;
+    // Key: The Unix time in seconds as a string (stored as a string on DynamoDB)
+    // Value: The cumulative steps for that day, resets at midnight
+    private HashMap<String, Integer> stepsMap;
+    // Buffer to keep step values before sending and clearing
+    private HashMap<String, Integer> stepsMapBuffer;
 
     StepCount() {
+        this.userId = "";
         this.currentSteps = 0;
-        this.totalDailySteps = new HashMap<>();
+        this.lastSetUnixTimeSeconds = 0;
+        this.stepsMap = new HashMap<>();
     }
 
     public int getUId() {
@@ -51,38 +57,63 @@ public class StepCount extends Observable{
         notifyObservers();
     }
 
-    public void addCurrentSteps(int currentSteps) {
-        this.currentSteps += currentSteps;
+    public int getLastSetUnixTimeSeconds() {
+        return lastSetUnixTimeSeconds;
+    }
+
+    public void setLastSetUnixTimeSeconds(int lastSetUnixTimeSeconds) {
+        this.lastSetUnixTimeSeconds = lastSetUnixTimeSeconds;
         setChanged();
         notifyObservers();
     }
 
-    public HashMap<String, Integer> getTotalDailySteps() {
-        return totalDailySteps;
+    public HashMap<String, Integer> getStepsMap() {
+        return stepsMap;
     }
 
-    public void setTotalDailySteps(HashMap<String, Integer> totalDailySteps) {
-        this.totalDailySteps = totalDailySteps;
+    public void setStepsMap(HashMap<String, Integer> stepsMap) {
+        if (stepsMap != null) {
+            this.stepsMap = stepsMap;
+            setChanged();
+            notifyObservers();
+        }
+    }
+
+    public void addStepsMap(String unixTimeSeconds, Integer steps) {
+        Calendar midnight = Calendar.getInstance();
+
+        midnight.set(Calendar.HOUR_OF_DAY, 0);
+        midnight.set(Calendar.MINUTE, 0);
+        midnight.set(Calendar.SECOND, 0);
+        midnight.set(Calendar.MILLISECOND, 0);
+
+        int midnightUnixTimeSeconds = (int) (midnight.getTimeInMillis() / 1000L);
+        Integer newStepCount;
+
+        // Check if watch has been restarted as the watch's internal step count for the day will
+        // also have been reset
+        // Also account for the expected step count reset at midnight of everyday
+        if (steps < this.currentSteps && lastSetUnixTimeSeconds > midnightUnixTimeSeconds) {
+            newStepCount = this.currentSteps + steps;
+        } else {
+            newStepCount = steps;
+        }
+
+        this.stepsMap.put(unixTimeSeconds, newStepCount);
+        this.stepsMapBuffer.put(unixTimeSeconds, newStepCount);
+        this.currentSteps = newStepCount;
+        this.lastSetUnixTimeSeconds = Integer.getInteger(unixTimeSeconds);
         setChanged();
         notifyObservers();
     }
 
-    public void addTotalDailySteps(String formattedDateAndTime, Integer steps) {
-        if (this.totalDailySteps != null) {
-//            Integer totalDailySteps = this.totalDailySteps.get(formattedDateAndTime);
-            Integer newTotalDailySteps;
+    public HashMap<String, Integer> getStepsMapBuffer() {
+        return stepsMapBuffer;
+    }
 
-//            if (totalDailySteps != null) {
-//                // Total has already been recorded for this day, append to this
-//                newTotalDailySteps = totalDailySteps + steps;
-//            } else {
-//                // Total has not been recorded yet for this day, this will be the initial value
-//                newTotalDailySteps = steps;
-//            }
-
-            newTotalDailySteps = steps;
-
-            this.totalDailySteps.put(formattedDateAndTime, newTotalDailySteps);
+    public void setStepsMapBuffer(HashMap<String, Integer> stepsMapBuffer) {
+        if (stepsMapBuffer != null) {
+            this.stepsMapBuffer = stepsMapBuffer;
             setChanged();
             notifyObservers();
         }

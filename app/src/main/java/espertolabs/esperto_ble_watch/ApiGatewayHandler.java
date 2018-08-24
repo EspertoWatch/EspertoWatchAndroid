@@ -101,6 +101,30 @@ public class ApiGatewayHandler {
         return body;
     }
 
+    public String postHeartRateMap(String hrMapJson){
+        final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/heartMap/";
+        String body = genericPostHandler(invokeUrl, hrMapJson);
+        return body;
+    }
+
+    public String postStepCountMap(String scMapJson){
+        final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/stepsMap/";
+        String body = genericPostHandler(invokeUrl, scMapJson);
+        return body;
+    }
+
+    public String postHeartRateCurrent(String hrCurrentJson){
+        final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/currentHR/";
+        String body = genericPostHandler(invokeUrl, hrCurrentJson);
+        return body;
+    }
+
+    public String postStepCountCurrent(String scCurrentJson){
+        final String invokeUrl = "https://75pp5et7e7.execute-api.us-east-1.amazonaws.com/prod/currentSteps/";
+        String body = genericPostHandler(invokeUrl, scCurrentJson);
+        return body;
+    }
+
     public String genericPostHandler(String invokeUrl, String jsonBody){
         String body = "";
         try {
