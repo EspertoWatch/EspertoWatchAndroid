@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
         //Check whether BLE is supported
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(this, getString(R.string.ble_not_supported), Toast.LENGTH_LONG).show();
-//            finish();
+            finish();
         }
 
         //check if Bluetooth is enabled
@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
             BLEEnabled = true;
         } else {
             Toast.makeText(this, getString(R.string.ble_not_supported), Toast.LENGTH_LONG).show();
-//            finish();
+            finish();
         }
 
         String[] PERMISSIONS = {Manifest.permission.READ_PHONE_STATE,

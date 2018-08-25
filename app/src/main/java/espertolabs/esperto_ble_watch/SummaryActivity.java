@@ -303,13 +303,17 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         hr_dataSet.setMode(LineDataSet.Mode.HORIZONTAL_BEZIER);
 
         hr_dataSet.setColors(getResources().getColor(android.R.color.holo_red_dark));
-        hr_dataSet.setLineWidth(3f);
         if (hrChartDisplayDays > 0) {
             hr_dataSet.setDrawCircleHole(true);
             hr_dataSet.setDrawCircles(true);
             hr_dataSet.setCircleColor(getResources().getColor(android.R.color.holo_red_dark));
             hr_dataSet.setCircleHoleRadius(2f);
             hr_dataSet.setCircleRadius(5f);
+            hr_dataSet.setLineWidth(3f);
+        } else {
+            hr_dataSet.setDrawCircleHole(false);
+            hr_dataSet.setDrawCircles(false);
+            hr_dataSet.setLineWidth(1f);
         }
         hr_dataSet.setDrawValues(false);
 
@@ -336,6 +340,8 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             bottomAxis.resetAxisMinimum();
             bottomAxis.resetAxisMaximum();
         } else {
+            bottomAxis.setValueFormatter(null);
+            bottomAxis.setLabelRotationAngle(0f);
             bottomAxis.setAxisMinimum(0f);
             bottomAxis.setAxisMaximum(24f);
         }
@@ -472,9 +478,11 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
             targetHRMap = sortedHRMap.subMap(String.valueOf(unixTimeSecondsLowerBound), true, String.valueOf(unixTimeSecondsUpperBound), false);
             for (Map.Entry<String, Integer> entry : targetHRMap.entrySet()) {
-                normalizedHour = (Integer.parseInt(entry.getKey()) - unixTimeSecondsLowerBound) / unixTimeSecondsBoundRange;
+                normalizedHour = ((Integer.parseInt(entry.getKey()) - unixTimeSecondsLowerBound) / (float) unixTimeSecondsBoundRange) * 24;
                 entries.add(new Entry(normalizedHour, entry.getValue()));
             }
+
+            totalTargetHRMapSize += targetHRMap.size();
         }
 
         if (totalTargetHRMapSize == 0) {
@@ -497,7 +505,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         List<BarEntry> entries = new ArrayList<>();
         HashMap<String, Integer> stepsMap = userSteps.getStepsMap();
         TreeMap<String, Integer> sortedStepsMap = new TreeMap<>(stepsMap);
-        Map<String, Integer> targetStepsMap;
+        NavigableMap<String, Integer> targetStepsMap;
 
         Calendar now = Calendar.getInstance();
         // Base time bounds start from midnight when granularity is 1 day
@@ -525,14 +533,9 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             now.add(Calendar.DAY_OF_MONTH, -1);
 
             targetStepsMap = sortedStepsMap.subMap(String.valueOf(unixTimeSecondsLowerBound), true, String.valueOf(unixTimeSecondsUpperBound), false);
-            for (Map.Entry<String, Integer> entry : targetStepsMap.entrySet()) {
-                displayedSteps += entry.getValue();
-            }
 
-            if (displayedSteps > 0) {
-                displayedSteps /= targetStepsMap.size();
-            } else {
-                displayedSteps = 0;
+            if (targetStepsMap.floorEntry(String.valueOf(unixTimeSecondsUpperBound)) != null) {
+                displayedSteps = targetStepsMap.floorEntry(String.valueOf(unixTimeSecondsUpperBound)).getValue();
             }
 
             targetDayofYear = now.get(Calendar.DAY_OF_YEAR);
@@ -542,6 +545,9 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             entries.add(new BarEntry(targetDayofYear, displayedSteps));
 
             totalTargetStepsMapSize += targetStepsMap.size();
+
+            // Decrement the day for the next iteration
+            now.add(Calendar.DAY_OF_MONTH, -1);
         }
 
         if (totalTargetStepsMapSize == 0) {
