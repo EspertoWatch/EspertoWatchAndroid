@@ -746,11 +746,15 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
     };
 
     private void onBLEReceive(int heartRate, int stepCount) {
-        // Make sure to only store after UI update
-        updateHeartUI(heartRate);
-        updateStepsUI(stepCount);
+        int lastHR = userHR.getCurrentHR();
+        int lastSteps = userSteps.getCurrentSteps();
+
+        // Make sure to store before updating UI
         storeHeartRate(heartRate);
         storeStepCount(stepCount);
+
+        updateHeartUI(heartRate, lastHR);
+        updateStepsUI(stepCount, lastSteps);
     }
 
     private final BroadcastReceiver mCallReceiver = new BroadcastReceiver() {
@@ -979,32 +983,31 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     Gson g = new Gson();
                     if(response != ""){
                         HeartRate hr = g.fromJson(response, HeartRate.class);
-                        updateHeartUI(hr.getCurrentHR());
+                        updateHeartUI(hr.getCurrentHR(), hr.getCurrentHR());
                         userHR.setCurrentHR(hr.getCurrentHR());
                         if (hr.getHRMap().size() != 0) {
                             userHR.setHRMap(hr.getHRMap());
                         }
                         hr_db.HeartRateDAO().insertHeartRate(userHR);
                     } else {
-                        updateHeartUI(0);
+                        updateHeartUI(0, 0);
                     }
                 } else {
                     // Load HR object from local database
                     userHR = userHRTemp;
-                    updateHeartUI(userHR.getCurrentHR());
+                    updateHeartUI(userHR.getCurrentHR(), userHR.getCurrentHR());
                 }
             }
         }).start();
     }
 
-    private void updateHeartUI(Integer currentHr){
+    private void updateHeartUI(Integer currentHr, Integer last){
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (currentHr > 0) {
                     drawHeartRateGraph();
                     String dynamicPart = "---";
-                    int last = userHR.getCurrentHR();
                     int delta = currentHr - last;
                     if (delta == 0) {
                         hr_delta_layout.setVisibility(View.INVISIBLE);
@@ -1014,20 +1017,19 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                         hr_delta_layout.setVisibility(View.VISIBLE);
                     }
                     hr_delta.setText(dynamicPart + " BPM");
-                    hr_current.setText(Integer.toString(userHR.getCurrentHR()) + " BPM");
+                    hr_current.setText(Integer.toString(currentHr) + " BPM");
                 }
             }
         });
     }
 
-    private void updateStepsUI(Integer currentSteps){
+    private void updateStepsUI(Integer currentSteps, Integer last){
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (currentSteps > 0) {
                     drawStepsGraph();
                     String dynamicPart = "---";
-                    int last = userSteps.getCurrentSteps();
                     int delta = currentSteps - last;
                     if (delta == 0) {
                         steps_delta_layout.setVisibility(View.INVISIBLE);
@@ -1037,7 +1039,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                         steps_delta_layout.setVisibility(View.VISIBLE);
                     }
                     steps_delta.setText(dynamicPart + " Steps");
-                    steps_current.setText(Integer.toString(userSteps.getCurrentSteps()) + " Steps");
+                    steps_current.setText(Integer.toString(currentSteps) + " Steps");
                 }
             }
         });
@@ -1057,19 +1059,19 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                     Gson g = new Gson();
                     if(response != ""){
                         StepCount steps = g.fromJson(response, StepCount.class);
-                        updateStepsUI(steps.getCurrentSteps());
+                        updateStepsUI(steps.getCurrentSteps(), steps.getCurrentSteps());
                         userSteps.setCurrentSteps(steps.getCurrentSteps());
                         if (steps.getStepsMap().size() != 0) {
                             userSteps.setStepsMap(steps.getStepsMap());
                         }
                         steps_db.StepCountDAO().insertStepCount(userSteps);
                     } else {
-                        updateStepsUI(0);
+                        updateStepsUI(0, 0);
                     }
                 } else {
                     // Load step count object from local database
                     userSteps = userStepsTemp;
-                    updateStepsUI(userSteps.getCurrentSteps());
+                    updateStepsUI(userSteps.getCurrentSteps(), userSteps.getCurrentSteps());
                 }
             }
         }).start();
