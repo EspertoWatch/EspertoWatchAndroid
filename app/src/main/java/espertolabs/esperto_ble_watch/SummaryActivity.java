@@ -623,22 +623,15 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
             timeString = ft.format(now);
             byte[] sendDate = timeString.getBytes(StandardCharsets.UTF_8);
 
-            Runnable retrySendTimeDate = () -> {
+            Runnable sendTimeAndDate = () -> {
                 int retries = 10;
-                boolean statusTime;
-                boolean statusDate;
-                do {
-                    statusTime = mBLEService.writeRXCharacteristic(sendTime);
-                    statusDate = mBLEService.writeRXCharacteristic(sendDate);
+                while (!mBLEService.writeRXCharacteristic(sendTime) && (retries-- > 0)) {
                     try {
                         Thread.sleep(50);
                     } catch(InterruptedException e) {
                     }
-                } while (((!statusTime) || (!statusDate)) && (retries-- > 0));
-            };
-
-            Runnable retrySendDate = () -> {
-                int retries = 10;
+                }
+                retries = 10;
                 while (!mBLEService.writeRXCharacteristic(sendDate) && (retries-- > 0)) {
                     try {
                         Thread.sleep(50);
@@ -647,13 +640,21 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 }
             };
 
-            if (!mBLEService.writeRXCharacteristic(sendTime)) {
-                new Thread(retrySendTimeDate).start();
-            } else {
-                if (!mBLEService.writeRXCharacteristic(sendDate)) {
-                    new Thread(retrySendDate).start();
-                }
-            }
+//            Runnable retrySendDate = () -> {
+//                int retries = 10;
+//                while (!mBLEService.writeRXCharacteristic(sendDate) && (retries-- > 0)) {
+//                    try {
+//                        Thread.sleep(50);
+//                    } catch(InterruptedException e) {
+//                    }
+//                }
+//            };
+
+            new Thread(sendTimeAndDate).start();
+
+//            if (!mBLEService.writeRXCharacteristic(sendDate)) {
+//                new Thread(retrySendDate).start();
+//            }
 
         } else {
             scanAndConnect();
@@ -830,10 +831,15 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
         unregisterReceiver(mCallReceiver);
         unregisterReceiver(mSMSReceiver);
         unbindService(mConnection);
-        hr_db.HeartRateDAO().insertHeartRate(userHR);
-        steps_db.StepCountDAO().insertStepCount(userSteps);
-        hr_db.close();
-        steps_db.close();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                hr_db.HeartRateDAO().insertHeartRate(userHR);
+                hr_db.close();
+                steps_db.StepCountDAO().insertStepCount(userSteps);
+                steps_db.close();
+            }
+        }).start();
     }
 
     @Override

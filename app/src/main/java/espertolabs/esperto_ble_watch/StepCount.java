@@ -29,6 +29,7 @@ public class StepCount extends Observable{
         this.currentSteps = 0;
         this.lastSetUnixTimeSeconds = 0;
         this.stepsMap = new HashMap<>();
+        this.stepsMapBuffer = new HashMap<>();
     }
 
     public int getUId() {
@@ -102,7 +103,7 @@ public class StepCount extends Observable{
         this.stepsMap.put(unixTimeSeconds, newStepCount);
         this.stepsMapBuffer.put(unixTimeSeconds, newStepCount);
         this.currentSteps = newStepCount;
-        this.lastSetUnixTimeSeconds = Integer.getInteger(unixTimeSeconds);
+        this.lastSetUnixTimeSeconds = Integer.parseInt(unixTimeSeconds);
         setChanged();
         notifyObservers();
     }
