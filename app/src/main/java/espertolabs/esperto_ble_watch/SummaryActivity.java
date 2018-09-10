@@ -957,7 +957,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
                 }
 
                 String userJson = userJsonObject.toString();
-                String response = handler.postHeartRateMap(userJson);
+                String response = handler.postStepCountMap(userJson);
                 Log.d("Steps_map_post_response", response);
 
                 if (response != ""){
