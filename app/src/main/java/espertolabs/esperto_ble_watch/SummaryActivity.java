@@ -459,7 +459,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
                 targetDayofYear = now.get(Calendar.DAY_OF_YEAR);
                 targetYear = now.get(Calendar.YEAR);
-                targetDayofYear += (int) ((targetYear - 2016) * 365.25f);
+                targetDayofYear += (int) ((targetYear - 2016) * 365.25f) + 1;
 
                 entries.add(new Entry(targetDayofYear, displayedHR));
 
@@ -540,7 +540,7 @@ public class SummaryActivity extends AppCompatActivity implements Observer {
 
             targetDayofYear = now.get(Calendar.DAY_OF_YEAR);
             targetYear = now.get(Calendar.YEAR);
-            targetDayofYear += (int) ((targetYear - 2016) * 365.25f);
+            targetDayofYear += (int) ((targetYear - 2016) * 365.25f) + 1;
 
             entries.add(new BarEntry(targetDayofYear, displayedSteps));
 
